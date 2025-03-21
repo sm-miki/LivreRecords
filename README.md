@@ -1,2 +1,2 @@
-# LivreReceiptManager
+# LivreRecords
 書籍などを購入した際のレシート画像を読み取り、何を購入したかを管理するアプリ。Webアプリとして動作。
