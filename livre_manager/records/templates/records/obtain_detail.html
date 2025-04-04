@@ -1,0 +1,11 @@
+{% load static %}
+
+<!--<link rel="stylesheet" href="{% static 'records/style.css' %}">-->
+
+<h1><a href="{% url 'records:index' %}">Livre Records</a></h1>
+
+<h2>入手記録詳細</h2>
+
+<p>ここに入手記録の詳細情報が表示されます</p>
+
+入手記録ID: {{ obtain_id }}

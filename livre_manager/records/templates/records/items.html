@@ -1,0 +1,18 @@
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'records/style.css' %}">
+
+<h1><a href="{% url 'records:index' %}">Livre Records</a></h1>
+
+<h2>書籍一覧</h2>
+
+<a href="{% url 'records:item_edit' %}">
+	<button>新規登録</button>
+</a>
+
+<a href="{% url 'records:item_detail' 1 %}">
+	<ul>
+		<li><a href="{% url 'records:item_detail' 1 %}">書籍1</a></li>
+	</ul>
+</a>
+
