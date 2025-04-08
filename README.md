@@ -8,7 +8,7 @@
 
 - Python3
 - Django
-- Tesseract(?)
+- Tesseract(未定)
 
 ## 機能
 
