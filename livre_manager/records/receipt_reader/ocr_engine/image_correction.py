@@ -3,7 +3,7 @@ from collections import deque
 import cv2
 import numpy as np
 
-def crop_receipt(image):
+def crop_receipt(image, size_scale=1):
 	"""
 	入力画像からレシート領域を抽出する。
 	入力画像は以下のような条件を満たすことが好ましい。
@@ -14,16 +14,17 @@ def crop_receipt(image):
 	imdim = np.min(image.shape[:2])
 	orig = image.copy()
 	
-	# 微細なノイズの除去
-	image = cv2.GaussianBlur(image, (5, 5), 0)
+	""" 1. ノイズ除去 """
+	ksize = 5
+	image = cv2.GaussianBlur(image, (ksize, ksize), 0)
 	
-	# ノイズ除去・領域強調: クロージング処理で穴埋め、膨張・収縮で連続領域を強調
-	ksize = int(imdim * 0.01)
+	""" 2. ノイズ除去・領域強調: クロージング処理で穴埋め、膨張・収縮で連続領域を強調 """
+	ksize = max(1, int(imdim * 0.002)) * 2 + 1
 	kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ksize, ksize))
 	image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel, iterations=3)
 	
-	# 白さを強調する
-	whiteness_gamma = 1.4  # マスクのガンマ値
+	""" 3. 白色強調 """
+	whiteness_gamma = 1.8  # マスクのガンマ値
 	h, s, v = cv2.split(cv2.cvtColor(image, cv2.COLOR_BGR2HSV).astype(np.float32))
 	p = (1 - s / 255)  # 白っぽさ（彩度が低い画素を高輝度とみなす）
 	p_min, p_max = np.min(p), np.max(p)
@@ -43,7 +44,7 @@ def crop_receipt(image):
 		std = np.mean(np.std(image, axis=(0, 1)))
 		image = np.clip((image - mean) * 255.0 / std + 127.5, 0, 255)
 	
-	# 白色領域の抽出: BGRで白寄りの部分を抽出
+	""" 4. 白色領域の抽出 (二値化) """
 	lower, upper = 175, 255
 	image = cv2.inRange(image, lower, upper)  # 閾値による二値化
 	
@@ -57,21 +58,25 @@ def crop_receipt(image):
 		# 最大白色領域だけを抜き出す
 		image = image * (labels == max_label)
 	
+	""" 5. 線分検出による輪郭決定 """
 	pts = _hough_bounding(image)
 	if pts is None:
 		return orig
 	
-	# (5) ソート&透視変換
+	""" 6. 透視変換 """
+	if isinstance(size_scale, (int, float)):
+		size_scale = (size_scale, size_scale)
+	
 	rect = _order_points(pts)
 	(tl, tr, br, bl) = rect
-	maxWidth = int(max(np.linalg.norm(br - bl), np.linalg.norm(tr - tl)))
-	maxHeight = int(max(np.linalg.norm(tr - br), np.linalg.norm(tl - bl)))
+	min_width = int(max(np.linalg.norm(br - bl), np.linalg.norm(tr - tl)) * size_scale[0])
+	min_height = int(max(np.linalg.norm(tr - br), np.linalg.norm(tl - bl)) * size_scale[1])
 	dst = np.array([[0, 0],
-							[maxWidth - 1, 0],
-							[maxWidth - 1, maxHeight - 1],
-							[0, maxHeight - 1]], dtype="float32")
+							[min_width - 1, 0],
+							[min_width - 1, min_height - 1],
+							[0, min_height - 1]], dtype="float32")
 	M = cv2.getPerspectiveTransform(rect, dst)
-	warped = cv2.warpPerspective(orig, M, (maxWidth, maxHeight))
+	warped = cv2.warpPerspective(orig, M, (min_width, min_height))
 	
 	return warped
 
@@ -95,9 +100,9 @@ def _hough_bounding(image):
 	edges = cv2.Canny(image, 50, 190, apertureSize=3)
 	
 	# (2) ハフ変換で輪郭を線分として検出する
-	minLineLength = imdim * 0.04
-	maxLineGap = imdim * 0.1
-	lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 100, minLineLength=minLineLength, maxLineGap=maxLineGap)
+	minLineLength = imdim * 0.02
+	maxLineGap = imdim * 0.075
+	lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 95, minLineLength=minLineLength, maxLineGap=maxLineGap)
 	if lines is None:
 		return None  # 検出失敗時
 	
@@ -258,3 +263,41 @@ def _line_intersection(line1, line2):
 		return None
 	ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom
 	return x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)
+
+def closing(image, ksize=(3, 3), iterations=1):
+	kernel_erode = np.ones(ksize, np.uint8)
+	image = cv2.erode(image, kernel_erode, iterations=iterations)
+	
+	# 膨張処理（気持ち大きめに）
+	kernel_dilate = np.ones(ksize, np.uint8)
+	image = cv2.dilate(image, kernel_dilate, iterations=iterations)
+	
+	return image
+
+def gamma_correction(image, gamma):
+	converted_value = 255 * np.float_power((image / 255), 1 / gamma)
+	
+	return converted_value
+
+def greyscale(image):
+	return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+def unsharp_masking(image, blur_ksize=(5, 5), alpha=1.5):
+	"""
+	
+	Args:
+		image:
+		blur_ksize:
+		alpha: 強度
+
+	Returns:
+
+	"""
+	
+	# ガウシアンぼかしを適用
+	blurred = cv2.GaussianBlur(image, blur_ksize, 0)
+	
+	# アンシャープマスクの適用
+	sharpened = np.clip((1 + alpha) * image - alpha * blurred, 0, 255)
+	
+	return sharpened

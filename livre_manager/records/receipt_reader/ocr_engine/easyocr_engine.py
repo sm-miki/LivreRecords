@@ -1,23 +1,23 @@
-from typing import Union
+from typing import Union, Sequence
 import os
 import numpy as np
 import cv2
+from PIL.Image import Image as PILImage
 
-from base_reader import BaseOCRReader, OCRTextBox
+from .base_ocr_engine import BaseOCREngine, OCRTextBlock
 
 os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = pow(2, 30).__str__()
 import easyocr
 
-class EasyOCRReader(BaseOCRReader):
+class EasyOCREngine(BaseOCREngine):
 	def __init__(
 			self,
-			preprocess_types: Union[str | tuple[str] | None] = None,
-			lang_list: Union[tuple[str] | None] = None,
+			lang_list: Union[Sequence[str] | None] = None,
 			link_threshold=0.3,
 			max_image_size=2048,
 			gpu=False,
 	):
-		super().__init__(preprocess_types=preprocess_types)
+		super().__init__()
 		
 		if lang_list is None:
 			lang_list = ['en', 'ja']
@@ -25,13 +25,15 @@ class EasyOCRReader(BaseOCRReader):
 		self.link_threshold = link_threshold
 		self.reader = easyocr.Reader(lang_list, gpu=gpu)
 	
-	def recognize_text(self, image):
+	def recognize_text(
+			self, image: np.ndarray
+	) -> list[OCRTextBlock]:
 		"""OCRを使って指定された画像から文字列とその位置情報を抽出します。
 
 		Args:
-			image (numpy.ndarray): 読み取り対象の画像。
+			image: 読み取り対象の画像。
 
-		Returns (list[tuple[tuple, str, float]]):
+		Returns:
 			画像から読み取ったすべてのテキスト情報を保持するリスト。
 			各テキスト情報:
 			 - 位置 (tuple[tuple, ..])
@@ -40,18 +42,19 @@ class EasyOCRReader(BaseOCRReader):
 		"""
 		
 		# 画像サイズを制限・縮小する
-		size = np.array(image.size[:2])
-		rescale = self.max_image_size / size.max()
-		if rescale < 1:
-			newsize = tuple(size * rescale)
-			image = cv2.resize(image, newsize)
+		size = np.array([image.shape[1], image.shape[0]])
+		
+		# rescale = self.max_image_size / size.max()
+		# if rescale < 1:
+		# 	newsize = tuple((size * rescale).astype(np.int32))
+		# 	image = cv2.resize(image, newsize)
 		
 		result = self.reader.readtext(image, link_threshold=0.3)
 		
 		return [
-			OCRTextBox(
-				vertices=tuple((pt[0] / rescale, pt[1] / rescale) for pt in vertices),
+			OCRTextBlock(
 				text=text,
-				prob=prob)
-			for vertices, text, prob in result
+				bbox=vertices,
+				prob=prob
+			) for vertices, text, prob in result
 		]
