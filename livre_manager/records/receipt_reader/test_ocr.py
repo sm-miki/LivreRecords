@@ -30,7 +30,7 @@ class Tester:
 	
 	def read(self, path):
 		try:
-			result: ReadResult = self.reader.recognize(path, self.preprocess_types)
+			result: ReadResult = self.reader.read_receipt(path, self.preprocess_types)
 			
 			overlay: np.ndarray = result.render_text_overlay()
 			

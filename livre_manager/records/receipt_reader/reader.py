@@ -136,7 +136,7 @@ class ReceiptReader:
 		self.ocr_engine = ocr_engine
 		self.isbn_reg = re.compile(r"(^|[ :;,])(?P<isbn>978(\d){10})(?=[ :;,]|$)")
 	
-	def recognize(self,
+	def read_receipt(self,
 			image_path: str,
 			preprocess_type: Union[str | list[str] | list[tuple[str, dict]] | None] = None
 	):
@@ -150,8 +150,9 @@ class ReceiptReader:
 		
 		return ReadResult(ocr_result=ocr_result, lines=lines, receipt_data=receipt_data)
 	
+	@staticmethod
 	def group_by_line(
-			self, text_blocks: list[OCRTextBlock],
+			text_blocks: list[OCRTextBlock],
 			y_thresh_ratio=0.3,
 			gap_thresh_ratio=1.0,
 			space_ratio=0.5,
@@ -259,9 +260,9 @@ class ReceiptReader:
 		data = { 'books': [] }
 		
 		# レシート内の文字領域の最大範囲を特定する
-		horizontal_bounds = np.array([(line[-1].left, line[-1].right) for line in lines])
-		bound_l = horizontal_bounds[:, 0].min()
-		bound_r = horizontal_bounds[:, 1].max()
+		# horizontal_bounds = np.array([(line[-1].left, line[-1].right) for line in lines])
+		# bound_l = horizontal_bounds[:, 0].min()
+		# bound_r = horizontal_bounds[:, 1].max()
 		
 		for line in lines:
 			for block in line:

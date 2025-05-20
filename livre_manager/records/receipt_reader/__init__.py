@@ -1,4 +1,1 @@
-from ocr_engine.easyocr import EasyOCREngine
-
-reader = EasyOCREngine()
-reader.recognize()
+from ocr_engine.easyocr_engine import EasyOCREngine
