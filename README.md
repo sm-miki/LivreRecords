@@ -24,6 +24,7 @@
 - Django
 - opencv-python
 - EasyOCR
+- django-widget-tweaks
 
 ## 画面遷移図
 
