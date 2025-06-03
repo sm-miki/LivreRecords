@@ -36,6 +36,7 @@ INSTALLED_APPS = [
 	'django.contrib.messages',
 	'django.contrib.staticfiles',
 	'records.apps.RecordsConfig',  # records アプリ
+	'widget_tweaks',  # records アプリ
 ]
 
 MIDDLEWARE = [

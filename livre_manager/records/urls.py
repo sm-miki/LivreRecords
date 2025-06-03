@@ -23,7 +23,7 @@ urlpatterns = [
 	# ex: /polls/
 	path("", views.index, name="index"),  # トップページ
 	path("obtains/", views.obtains, name="obtains"),  # 入手記録一覧
-	path("obtain-edit", views.obtain_edit, name="obtain_edit"),  # 入手記録編集
+	path("obtain-edit", views.ObtainEditView.as_view(), name="obtain_edit"),  # 入手記録編集
 	path("obtain/<str:pk>", views.obtain_detail, name="obtain_detail"),  # 入手記録詳細
 	path("items/", views.items, name="items"),  # 書籍一覧
 	path("item-edit", views.item_edit, name="item_edit"),  # 書籍情報編集
