@@ -1,0 +1,11 @@
+#サーバー起動
+python3 manage.py runserver
+
+# マイグレーションファイルを作成・反映
+python3 manage.py makemigrations records
+
+# マイグレーションを実行
+python3 manage.py migrate
+
+# Djnago管理画面のログインで使用する管理ユーザーを作成
+python manage.py createsuperuser
