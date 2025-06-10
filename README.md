@@ -28,11 +28,11 @@
 
 ## 画面遷移図
 
-![画面遷移図](./docs/画面遷移図.drawio.png)
+![画面遷移図](./docs/images/画面遷移図.drawio.png)
 
 ## ER図
 
-![ER図](./docs/ER図-ja.drawio.png)
+![ER図](./docs/images/ER図-ja.drawio.png)
 
 ## インストール手順（作成中）
 
