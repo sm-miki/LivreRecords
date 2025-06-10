@@ -1,57 +1,78 @@
+{% extends 'records/base.html' %}
+
 {% load static %}
 {% load widget_tweaks %}
 
+{% block title %}入手記録の編集{% endblock %}
+
+<!-- 追加ヘッド項目 -->
+{% block extra_css %}
 <link rel="stylesheet" href="{% static 'records/obtain_detail.css' %}">
+{% endblock %}
 
-<div class="wrapper">
-	<h1><a href="{% url 'records:index' %}">Livre Records</a></h1>
+{% block content %}
+<h2>入手記録の編集</h2>
 
-	<h2>入手記録の登録</h2>
+<form method="post">
+	{% csrf_token %}
 
-	<form method="post">
-		{% csrf_token %}
+	<h3>共通情報</h3>
+	<table class="detail-table">
+		<tbody>
 
-		<h3>共通情報</h3>
-		<table class="detail-table">
-			<tbody>
+		{% for field in obtain_form %}
+		<tr>
+			<th>{{ field.label }}</th>
+			<td>
+				{{ field |add_class:"form-control"}}
+				{% if field.errors %}
+					<ul class="errorlist">
+						{% for error in field.errors %}
+							<li style="color: red;">{{ error }}</li>
+						{% endfor %}
+					</ul>
+				{% endif %}
+			</td>
+		</tr>
+		{% endfor %}
 
-			{% for field in obtain_form %}
-			<tr>
-				<th>{{ field.label }}</th>
-				<td>{{ field |add_class:"form-control"}}</td>
-			</tr>
+
+		</tbody>
+	</table>
+
+	<h3>項目別情報</h3>
+	{{ item_formset.management_form }}
+
+	<table id="book-items-container" class="detail-table">
+		<!-- ヘッダの追加 -->
+		{% for colname in item_columns %}
+		<th>{{ colname }}</th>
+		{% endfor %}
+
+		<!-- 行の追加 -->
+		{% for form in item_formset %}
+		<tr class="obtained-item">
+			{% for field in form %}
+				{% if field.name != "DELETE" and field.name != "obtain_record" and field.name != "id" %}
+					<td>
+						{{ field |add_class:"form-control"}}
+					</td>
+				{% endif %}
 			{% endfor %}
 
+			<td>
+				<button type="button" class="delete-row-button">削除</button>
+			</td>
+		</tr>
+		{% endfor %}
+	</table>
 
-			</tbody>
-		</table>
+	<div class="container">
+		<button name="btn_submit" type="submit">登録</button>
+	</div>
+</form>
+{% endblock %}
 
-		<h3>項目別情報</h3>
-
-		<table id="book-items-container" class="detail-table">
-			<!-- ヘッダの追加 -->
-			{% for colname in item_columns %}
-			<th>{{ colname }}</th>
-			{% endfor %}
-
-			<!-- 行の追加 -->
-			{% for form in item_formset %}
-			<tr class="obtained-item">
-				{% for field in form %}
-					{% if field.name != "DELETE" and field.name != "obtain_record" and field.name != "id" %}
-						<td>{{ field |add_class:"form-control"}}</td>
-					{% endif %}
-				{% endfor %}
-
-				<td>
-					<button type="button" class="delete-row-button">削除</button>
-				</td>
-			</tr>
-			{% endfor %}
-		</table>
-
-		<div class="container">
-			<button name="btn_submit" type="submit">登録</button>
-		</div>
-	</form>
-</div>
+{% block extra_js %}
+	<script src="{% static 'records/obtain_form.js' %}"></script>
+{% endblock %}

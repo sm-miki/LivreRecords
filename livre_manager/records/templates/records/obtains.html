@@ -1,8 +1,11 @@
+{% extends 'records/base.html' %}
 {% load static %}
+
+{% block title %}入手記録一覧{% endblock %}
 
 <!--<link rel="stylesheet" href="{% static 'records/style.css' %}">-->
 
-<h1><a href="{% url 'records:index' %}">Livre Records</a></h1>
+{% block content %}
 
 <h2>入手記録一覧</h2>
 
@@ -11,9 +14,10 @@
 </a>
 
 
-<a href="{% url 'records:item_detail' 1 %}">
+<a href="{% url 'records:obtain_detail' 1 %}">
 	<ul>
-		<li><a href="{% url 'records:item_detail' 1 %}">入手記録1</a></li>
+		<li><a href="{% url 'records:obtain_detail' 1 %}">入手記録1</a></li>
 	</ul>
 </a>
 
+{% endblock %}

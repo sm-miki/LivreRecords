@@ -1,8 +1,13 @@
 from datetime import datetime
 from django.db import models
+import dateutil.parser
 
 # Create your models here.
 
+default_date = datetime(1, 1, 1)
+
+def validate_datetime(s):
+	return dateutil.parser.parse(s, default=default_date)
 
 class ObtainRecord(models.Model):
 	"""
@@ -43,6 +48,8 @@ class ObtainRecord(models.Model):
 	subtotal = models.IntegerField(null=True, blank=True)
 	# 税額
 	tax = models.IntegerField(null=True, blank=True)
+	# その他費用 (送料など)
+	extra_fee = models.IntegerField(null=True, blank=True, default=0)
 	
 	# 支払い方法
 	PAYMENT_METHOD_CHOICES = [
@@ -69,12 +76,13 @@ class ObtainRecord(models.Model):
 	def clean(self):
 		if self.obtain_date_str:
 			try:
-				self.obtain_date = datetime.strptime(self.obtain_date_str, "%Y/%m/%d").date()
+				self.obtain_date = validate_datetime(self.obtain_date_str)
 			except ValueError:
 				self.obtain_date = None
+				raise
 	
 	def __str__(self):
-		return f"{self.obtain_date_str} {self.store_name}"
+		return f"{self.obtain_date_str or 'NoneDate'} @ {self.store_name}"
 	
 	class Meta:
 		ordering = ["-created_at"]
@@ -120,8 +128,8 @@ class ObtainedItem(models.Model):
 	)
 	
 	def __str__(self):
-		return f"{self.item_type} - {self.item_id} ({self.obtain_record.obtain_date})"
-
+		return f"{self.item_type}: {self.item_id} - {self.description} ({self.obtain_record})"
+	
 	class Meta:
 		ordering = ["-created_at"]
 		verbose_name = '入手項目'

@@ -17,32 +17,20 @@ def index(request):
 def obtains(request):
 	return render(request, 'records/obtains.html')
 
-# # 入手記録入力画面
-# def obtain_edit(request):
-# 	my_dict = {
-# 		'insert_something': "views.pyのinsert_something部分です。",
-# 		'name': 'Bashi',
-# 		# 'test_titles': ['title 1', 'title 2', 'title 3'],
-# 		'form': ObtainForm(),  # 追加
-# 	}
-# 	return render(request, 'records/obtain_edit.html', my_dict)
-
 class ObtainEditView(TemplateView):
 	def __init__(self):
-		self.params = {
+		self.context = {
 			'PostSuccess': False,
 			'obtain_form': ObtainForm(),
 			'item_formset': ObtainItemFormSet(),
 			'item_columns': ObtainedItemForm.Meta.labels.values(),
-			
 		}
 	
 	def get(self, request, *args, **kwargs):
-		
-		self.params['obtain_form'] = ObtainForm()
-		self.params['item_formset'] = ObtainItemFormSet()
-		self.params['PostSuccess'] = False
-		return render(request, 'records/obtain_edit.html', context=self.params)
+		self.context['obtain_form'] = ObtainForm()
+		self.context['item_formset'] = ObtainItemFormSet()
+		self.context['PostSuccess'] = False
+		return render(request, 'records/obtain_edit.html', context=self.context)
 	
 	def post(self, request):
 		"""
@@ -63,40 +51,49 @@ class ObtainEditView(TemplateView):
 				item_formset.instance = obtain  # Formsetに親インスタンスを紐付け
 				item_formset.save()
 			# return redirect('receipt_success')  # 成功ページへリダイレクト
-			self.params['PostSuccess'] = True
+			
+			self.context.update({
+				'obtain_form': ObtainForm(),
+				'item_formset': ObtainItemFormSet(),
+			})
+			
+			self.context['PostSuccess'] = True
 		else:
 			# フォームが有効ではない場合、
 			# errorsにエラー内容が格納される。
 			print(obtain_form.errors)
-			
-			obtain_form = ObtainForm()
-			item_formset = ObtainItemFormSet()
+			print(item_formset.errors)
 		
-		self.params.update({
-			'obtain_form': obtain_form,
-			'item_formset': item_formset,
-		})
-		
-		return render(request, 'records/obtain_edit.html', context=self.params)
+		return render(request, 'records/obtain_edit.html', context=self.context)
 
 # 入手記録詳細画面
 def obtain_detail(request, pk):
-	context = { "obtain_id": pk }
-	return render(request, 'records/obtain_detail.html', context)
+	context = {
+		'obtain_id': pk,
+	}
+	return render(request, 'records/obtain_detail.html', context=context)
 
 # 書籍一覧画面
 def items(request):
-	return render(request, 'records/items.html')
+	context = {
+	}
+	return render(request, 'records/items.html', context=context)
 
 # 書籍情報編集画面
 def item_edit(request):
-	return render(request, 'records/item_edit.html')
+	context = {
+	}
+	return render(request, 'records/item_edit.html', context=context)
 
 # 書籍詳細画面
 def item_detail(request, pk):
-	context = { "item_id": pk }
-	return render(request, 'records/item_detail.html', context)
+	context = {
+		"item_id": pk,
+	}
+	return render(request, 'records/item_detail.html', context=context)
 
 # 統計画面
 def stats(request):
-	return render(request, 'records/stats.html')
+	context = {
+	}
+	return render(request, 'records/stats.html', context=context)

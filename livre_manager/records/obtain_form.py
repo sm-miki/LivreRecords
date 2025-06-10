@@ -1,8 +1,9 @@
 from django import forms
 from django.forms import inlineformset_factory
+from django.core.exceptions import ValidationError
 
 from .form_util import ImageWidget
-from .models import ObtainRecord, ObtainedItem
+from .models import ObtainRecord, ObtainedItem, validate_datetime
 
 class ObtainForm(forms.ModelForm):
 	class Meta:
@@ -17,6 +18,7 @@ class ObtainForm(forms.ModelForm):
 			'total': { 'label': '支払金額' },
 			'subtotal': { 'label': '税抜合計' },
 			'tax': { 'label': '税額' },
+			'extra_fee': { 'label': '送料等' },
 			'payment_method': { 'label': '支払方法' },
 			'receipt_image': { 'label': 'レシート画像' },
 		}
@@ -25,17 +27,27 @@ class ObtainForm(forms.ModelForm):
 		fields = list(FieldMap.keys())
 		labels = { name: v['label'] for name, v in FieldMap.items() if 'label' in v }
 		widgets = { name: v['widget'] for name, v in FieldMap.items() if 'widget' in v }
+	
+	# def clean_obtain_date_str(self):
+	# 	data = self.cleaned_data.get('obtain_date_str')
+	# 	if data:
+	# 		try:
+	# 			validate_datetime(data)
+	# 		except ValueError:
+	# 			raise ValidationError("不正な日付です。")
+	#
+	# 	return data
 
 OBTAINED_ITEM_FIELD_MAP = {
 	'item_type': { 'label': '種類' },
 	'item_id': { 'label': '商品・書籍ID(ISBN)', 'widget': forms.TextInput() },
-	'genre_code': { 'label': 'ジャンルコード' ,'widget': forms.TextInput() },
+	'genre_code': { 'label': 'ジャンルコード', 'widget': forms.TextInput() },
 	'description': { 'label': '商品名・説明', 'widget': forms.TextInput() },
 	'net_price': { 'label': '税抜価格' },
 	'price': { 'label': '税込価格' },
 	'tax': { 'label': '税額' },
 	'quantity': { 'label': '数量' },
-	'user_memo': { 'label': 'メモ' , 'widget': forms.TextInput() },
+	'user_memo': { 'label': 'メモ', 'widget': forms.TextInput() },
 }
 
 class ObtainedItemForm(forms.ModelForm):
@@ -44,7 +56,7 @@ class ObtainedItemForm(forms.ModelForm):
 		fields = list(OBTAINED_ITEM_FIELD_MAP.keys())
 		labels = { name: v['label'] for name, v in OBTAINED_ITEM_FIELD_MAP.items() if 'label' in v }
 		widgets = { name: v['widget'] for name, v in OBTAINED_ITEM_FIELD_MAP.items() if 'widget' in v }
-		
+
 ObtainItemFormSet = inlineformset_factory(
 	parent_model=ObtainRecord,
 	model=ObtainedItem,

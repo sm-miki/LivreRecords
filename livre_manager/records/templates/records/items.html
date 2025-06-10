@@ -1,8 +1,9 @@
+{% extends 'records/base.html' %}
 {% load static %}
 
-<link rel="stylesheet" href="{% static 'records/style.css' %}">
+{% block title %}書籍一覧{% endblock %}
 
-<h1><a href="{% url 'records:index' %}">Livre Records</a></h1>
+{% block content %}
 
 <h2>書籍一覧</h2>
 
@@ -16,3 +17,4 @@
 	</ul>
 </a>
 
+{% endblock %}

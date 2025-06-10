@@ -1,0 +1,29 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{% block title %}{% endblock %}{% block title_suffix %} - Livre Records{% endblock %}</title>
+	<link rel="stylesheet" href="{% static 'records/base.css' %}">
+	{% block extra_css %}{% endblock %}
+</head>
+<body>
+	<div class="wrapper">
+		<div class="header">
+			<h1><a href="{% url 'records:index' %}">Livre Records</a></h1>
+		</div>
+
+		<div class="content">
+			{% block content %} {% endblock %}
+		</div>
+
+		<div class="footer">
+			<p>&copy; 2025 Livre Records</p>
+		</div>
+	</div>
+
+	{% block extra_js %}{% endblock %}
+</body>
+</html>
