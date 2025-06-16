@@ -1,0 +1,43 @@
+{% extends 'records/base.html' %}
+{% load static %}
+{% load record_extras %}
+
+{% block title %}入手記録一覧{% endblock %}
+
+<!--<link rel="stylesheet" href="{% static 'records/style.css' %}">-->
+
+{% block content %}
+
+<h2>入手記録一覧</h2>
+
+<a href="{% url 'records:obtain_edit' %}">
+	<button>新規登録</button>
+</a>
+
+
+<table class="detail-table">
+	<thead>
+	<tr>
+		{% for header in headers %}
+		<th>{{ header }}</th>
+		{% endfor %}
+		<th>リンク</th>
+	</tr>
+	</thead>
+	<tbody>
+	{% for record in records %}
+	<tr>
+		{% for name in field_names %}
+		<td>{{ record|attr:name }}</td>
+		{% endfor %}
+		<td><a href="{% url 'records:obtain_detail' record.id %}">編集</a></td>
+	</tr>
+	{% empty %}
+	<tr>
+		<td colspan="{{ headers|length }}">該当する記録がありません</td>
+	</tr>
+	{% endfor %}
+	</tbody>
+</table>
+
+{% endblock %}

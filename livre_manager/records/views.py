@@ -7,6 +7,7 @@ from django.views import generic
 from django.utils import timezone
 from django.views.generic import TemplateView
 
+from .models import ObtainRecord
 from .obtain_form import ObtainForm, ObtainedItemForm, ObtainItemFormSet
 
 # トップページ
@@ -14,8 +15,26 @@ def index(request):
 	return render(request, 'records/index.html')
 
 # 入手記録一覧画面
-def obtains(request):
-	return render(request, 'records/obtains.html')
+def obtain_list(request):
+	# 動的にモデルのフィールドを取得
+	model = ObtainRecord
+	fields = [f for f in model._meta.fields if f.name not in model.READONLY_FIELDS]
+	
+	# フィールド名とヘッダー用ラベルを準備
+	headers = [f.verbose_name for f in fields]
+	field_names = [f.name for f in fields]
+	
+	# 全レコードを取得
+	records = model.objects.all()
+	
+	context = {
+		'headers': headers,
+		'field_names': field_names,
+		'records': records,
+	}
+	return render(request, 'records/obtain_list.html', context)
+	
+	# return render(request, 'records/obtains.html')
 
 class ObtainEditView(TemplateView):
 	def __init__(self):
