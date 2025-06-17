@@ -14,7 +14,7 @@ class ObtainForm(forms.ModelForm):
 			'transaction_number': { 'label': '取引番号', 'widget': forms.TextInput() },
 			'transaction_context': { 'label': 'その他取引情報', 'widget': forms.TextInput() },
 			'staff': { 'label': '担当者情報', 'widget': forms.TextInput() },
-			'currency_unit': { 'label': '通貨単位' },
+			'currency_code': { 'label': '通貨単位' },
 			'total': { 'label': '支払金額' },
 			'subtotal': { 'label': '税抜合計' },
 			'tax': { 'label': '税額' },

@@ -15,6 +15,11 @@ h1 {
 	margin-block-start: 0.2em;
 	margin-block-end: 0.3em;
 }
+a {
+  text-decoration: none;
+  font-weight: bold;
+  color: #0066ff;
+}
 
 /*
  * Page Structure
@@ -86,4 +91,21 @@ input[type="number"].form-control {
 	display: flex;
 	justify-content: center;
 	gap: 10px;
+}
+
+/*
+ * Item Card
+ */
+.item-card {
+	border-bottom: 1px solid grey;
+	margin-bottom: 5px;
+	display: block;
+}
+.inline-flow {
+	display: flex;
+	flex-direction column;
+	gap: 1em;
+}
+.card-field {
+	text-overflow: ellipsis;
 }

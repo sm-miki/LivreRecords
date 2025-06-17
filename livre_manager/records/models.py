@@ -14,10 +14,10 @@ class ObtainRecord(models.Model):
 	入手記録テーブルのフィールドを定義する。
 	"""
 	# 入手タイプ。
-	OBTAIN_TYPE_CHOICES = [
-		('purchase', '購入'),
-		('other', 'その他'),
-	]
+	OBTAIN_TYPE_CHOICES = {
+		'purchase': '購入',
+		'other': 'その他',
+	}
 	obtain_type = models.CharField(max_length=10, choices=OBTAIN_TYPE_CHOICES, default='purchase')
 	# 店舗名
 	store_name = models.TextField(null=False, blank=True)
@@ -32,15 +32,16 @@ class ObtainRecord(models.Model):
 	# 担当者情報
 	staff = models.TextField(null=False, blank=True)
 	# 通貨単位
-	NULL_CURRENCY_UNIT = ''
-	JPY_UNIT = 'JPY'
-	USD_UNIT = 'USD'
-	CURRENCY_UNIT_CHOICES = (
-		(NULL_CURRENCY_UNIT, u"---"),
-		(JPY_UNIT, u"円"),
-		(USD_UNIT, u"ドル(USD)"),
-	)
-	currency_unit = models.CharField(max_length=10, choices=CURRENCY_UNIT_CHOICES, blank=True, default=JPY_UNIT)
+	NULL_CURRENCY_CODE = ''
+	JPY = 'JPY'
+	USD = 'USD'
+	
+	CURRENCY_CODE_CHOICES = {
+		NULL_CURRENCY_CODE: u"---",
+		JPY: u"円",
+		USD: u"ドル(USD)",
+	}
+	currency_code = models.CharField(max_length=10, choices=CURRENCY_CODE_CHOICES, blank=True, default=JPY)
 	
 	# 合計支払金額
 	total = models.IntegerField(null=True, blank=True)
@@ -73,6 +74,13 @@ class ObtainRecord(models.Model):
 		'created_at', 'updated_at',
 	)
 	
+	def obtain_type_label(self):
+		return self.OBTAIN_TYPE_CHOICES[self.obtain_type]
+	
+	@property
+	def total_quantity(self):
+		return sum(item.quantity for item in self.items.all())
+	
 	def clean(self):
 		if self.obtain_date_str:
 			try:
@@ -93,13 +101,15 @@ class ObtainedItem(models.Model):
 	"""
 	入手記録テーブルのフィールドを定義する。
 	"""
-	obtain_record = models.ForeignKey(ObtainRecord, on_delete=models.CASCADE, related_name='items')
+	obtain_record = models.ForeignKey(
+		ObtainRecord, on_delete=models.CASCADE, related_name='items'
+	)
 	
 	# 項目タイプ
-	ITEM_TYPE_CHOICES = (
-		('book', u"書籍"),
-		('other', u"その他"),
-	)
+	ITEM_TYPE_CHOICES = {
+		'book': u"書籍",
+		'other': u"その他",
+	}
 	item_type = models.CharField(max_length=20, choices=ITEM_TYPE_CHOICES, default='book')
 	# 商品・書籍ID
 	item_id = models.TextField(null=True, blank=True)

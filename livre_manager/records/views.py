@@ -87,10 +87,14 @@ class ObtainEditView(TemplateView):
 
 # 入手記録詳細画面
 def obtain_detail(request, pk):
+	record = get_object_or_404(ObtainRecord, pk=pk)
 	context = {
+		'record': record,
 		'obtain_id': pk,
 	}
 	return render(request, 'records/obtain_detail.html', context=context)
+
+# return render(request, 'records/obtains.html')
 
 # 書籍一覧画面
 def items(request):

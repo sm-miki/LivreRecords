@@ -4,8 +4,6 @@
 
 {% block title %}入手記録一覧{% endblock %}
 
-<!--<link rel="stylesheet" href="{% static 'records/style.css' %}">-->
-
 {% block content %}
 
 <h2>入手記録一覧</h2>
@@ -15,29 +13,27 @@
 </a>
 
 
-<table class="detail-table">
-	<thead>
-	<tr>
-		{% for header in headers %}
-		<th>{{ header }}</th>
-		{% endfor %}
-		<th>リンク</th>
-	</tr>
-	</thead>
-	<tbody>
+<div class="item-container">
 	{% for record in records %}
-	<tr>
-		{% for name in field_names %}
-		<td>{{ record|attr:name }}</td>
-		{% endfor %}
-		<td><a href="{% url 'records:obtain_detail' record.id %}">編集</a></td>
-	</tr>
+		<div class="item-card">
+			<div class="inline-flow">
+				<div class=".card-field">
+					<a href="{% url 'records:obtain_detail' record.id %}">
+						{{ record.obtain_date_str |default:"&lt;日時未設定&gt;" }} @ {{ record.store_name |default:"&lt;店舗未設定&gt;" }}
+					</a>
+				</div>
+			</div>
+			<div class="inline-flow">
+				<div>{{ record.total_quantity }}点</div>
+				<div>合計金額 {{ record.total |currency_format:record.currency_code }}</div>
+			</div>
+			<div class="inline-flow">
+				取引番号: {{ record.transaction_number| default:"-" }}
+			</div>
+		</div>
 	{% empty %}
-	<tr>
-		<td colspan="{{ headers|length }}">該当する記録がありません</td>
-	</tr>
+	<div>該当する記録がありません</div>
 	{% endfor %}
-	</tbody>
-</table>
+</div>
 
 {% endblock %}
