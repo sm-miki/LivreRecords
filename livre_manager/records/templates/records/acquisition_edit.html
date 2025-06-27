@@ -1,0 +1,85 @@
+{% extends 'records/base.html' %}
+
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}入手記録の編集{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
+
+<h2>{% if is_new_record %}入手記録の新規作成{% else %}入手記録の編集{% endif %}</h2>
+
+<form method="post">
+	{% csrf_token %}
+	{% for hidden in acquisition_form.hidden_fields %}
+		{{ hidden }}
+	{% endfor %}
+
+	<div>
+		<h3>共通情報</h3>
+		<table class="detail-table">
+			<tbody>
+			{% for field in acquisition_form.visible_fields %}
+			<tr>
+				<th>{{ field.label }}</th>
+				<td>
+					{{ field |add_class:"form-control"}}
+					{% if field.errors %}
+						<ul class="errorlist">
+							{% for error in field.errors %}
+								<li style="color: red;">{{ error }}</li>
+							{% endfor %}
+						</ul>
+					{% endif %}
+				</td>
+			</tr>
+			{% endfor %}
+
+			</tbody>
+		</table>
+	</div>
+
+	<div>
+		<h3>項目別情報</h3>
+		{{ item_formset.management_form }}
+
+		<table id="items-container" class="detail-table">
+			<!-- ヘッダの追加 -->
+			{% for colname in item_columns %}
+			<th>{{ colname }}</th>
+			{% endfor %}
+
+			<!-- 行の追加 -->
+			{% for form in item_formset %}
+			<tr class="acquired-item">
+				{% for hidden in form.hidden_fields %}
+					{{ hidden }}
+				{% endfor %}
+
+				{% for field in form.visible_fields %}
+					<td>
+						{{ field | add_class:"form-control"}}
+					</td>
+				{% endfor %}
+
+				<td>
+					<button type="button" class="delete-row-button">削除</button>
+				</td>
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
+
+	<div class="container">
+		<button id="submit-button" name="btn_submit" type="submit">登録</button>
+		<button id="cancel-button" type="button" onclick="window.location.href='{{ cancel_url }}'">キャンセル</button>
+	</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+	<script src="{% static 'records/acquisition_form.js' %}"></script>
+{% endblock %}

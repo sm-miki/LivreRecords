@@ -3,12 +3,18 @@
 
 {% block title %}書籍情報{% endblock %}
 
-<!--<link rel="stylesheet" href="{% static 'records/style.css' %}">-->
+{% block breadcrumbs %}
+	<div class="breadcrumbs">
+		<a href="{% url 'records:book_list' %}">↩書籍一覧に戻る</a>
+	</div>
+{% endblock %}
 
 {% block content %}
+
 <h2>入手記録一覧</h2>
 
 <p>ここに書籍の詳細情報が表示されます</p>
 
 書籍ID: {{ item_id }}
+
 {% endblock %}

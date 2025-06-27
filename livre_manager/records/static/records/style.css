@@ -8,17 +8,28 @@ body {
 }
 
 p {
-	margin-block-start: 0.4em;
+	margin-block-start: 0.15em;
 	margin-block-end: 0.4em;
 }
 h1 {
-	margin-block-start: 0.2em;
+	margin-block-start: 0.15em;
 	margin-block-end: 0.3em;
 }
+h2 {
+	margin-block-start: 0.15em;
+	margin-block-end: 0.32em;
+}
+h3 {
+	margin-block-start: 0.15em;
+	margin-block-end: 0.25em;
+}
 a {
-  text-decoration: none;
-  font-weight: bold;
-  color: #0066ff;
+	text-decoration: none;
+	font-weight: bold;
+	color: #2A89E8;
+}
+a:hover {
+	text-decoration: underline;
 }
 
 /*
@@ -29,18 +40,104 @@ a {
 	max-width: 960px;
 	margin-left: auto;
 	margin-right: auto;
+	padding-left: 0.5em;
+	padding-right: 0.5em;
 }
+
+/*
+ * Header
+ */
 .header {
-	padding: 5px 20px 5px 20px;
+	padding: 5px 0em 5px 0em;
+	display: flex;
+	flex-direction: row;
+	align-items: flex-end;
 }
+.logo {
+	padding: 0px 6px;
+}
+.logo a {
+	text-decoration: none;
+	font-size: 24pt;
+	color: #39CC8C;
+	font-weight: bold;
+}
+
+.navigation {
+	display: flex;
+	flex-direction: row;
+	margin: 0px 0px;
+	padding: 4px 6px;
+	flex-wrap: wrap;
+}
+.navigation > div {
+	padding: 0px 10px;
+}
+.navigation > div {
+	border-left: 1px solid #bbb;
+}
+
+/*
+ * Content
+ */
 .content {
-	margin: 0px 10px 0px 10px;
-	padding: 10px 20px 10px 20px;
+	margin: 0px 0em 0px 0em;
+	padding: 15px 20px 15px 20px;
 	background-color: #ffffff;
 	border-radius: 10px;
+	display: flex;
+	flex-direction: column;
 }
+.breadcrumbs {
+	margin: 0.2em 0.3em 0.4em 0.3em;
+	font-size: 92%;
+	color: #444;
+}
+.breadcrumbs a {
+	font-weight: normal;
+	color: #444;
+}
+
+/*
+ * Footer
+ */
 .footer {
 	padding: 3px 20px 0px 20px;
+}
+
+
+/*
+ * Text Decorations
+ */
+.text-delimiter {
+	color: #aaaaaa;
+}
+.desc-label {
+
+}
+
+/*
+ * Inline Structures
+ */
+.inline-flow {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 0.0em 0.4em;
+	flex-wrap: wrap;
+}
+.inline-flow > div {
+	max-width: 100%;
+	text-wrap: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.inline-flow > .text-item + .text-item {
+	margin-left: 0.5em; /* 隣接する文字列アイテム間のマージン */
+}
+
+.right-align {
+	margin-left: auto;
 }
 
 /*
@@ -50,6 +147,8 @@ table.detail-table {
 	width: 96%;
 	margin-left: auto;
 	margin-right: auto;
+	margin-top: 0.4em;
+	margin-bottom: 0.4em;
 	border: 1px solid #aaaaaa;
 	table-layout: auto;
 	background-color: white;
@@ -73,6 +172,7 @@ table.detail-table th {
 textarea.form-control {
 	resize: none;
 	width: 100%;
+	box-sizing: border-box;
 }
 
 input[type="text"].form-control {
@@ -98,14 +198,50 @@ input[type="number"].form-control {
  */
 .item-card {
 	border-bottom: 1px solid grey;
-	margin-bottom: 5px;
+	padding-top: 5px;
+	padding-bottom: 5px;
 	display: block;
 }
-.inline-flow {
-	display: flex;
-	flex-direction column;
-	gap: 1em;
+.item-container {
+	margin: 0.4em 0.0em 0.4em 0em;
+	border-top: 1px solid grey;
 }
 .card-field {
-	text-overflow: ellipsis;
+}
+.card-control {
+	font-size: 95%;
+}
+
+/*
+ * Item Detail
+ */
+.item-title {
+	font-weight: bold;
+}
+
+/*
+ * Item Type Symbol
+ */
+
+.item-type-symbol {
+	padding: 0.05em 0.2em 0.05em 0.2em;
+	border-radius: 0.4em;
+	border-width: 1.5px;
+	border-style: solid;
+	font-weight: bold;
+	font-size: 92%;
+	color: #ffffff;
+	background-color: #e3f;
+}
+.purchase-acquisition-type {
+	background-color: #ff8800;
+}
+.other-acquisition-type {
+	background-color: #69BCCF;
+}
+.book-item-type {
+	background-color: #39CC8C;
+}
+.other-item-type {
+	background-color: #888;
 }

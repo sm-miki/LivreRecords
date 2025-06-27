@@ -22,11 +22,15 @@ app_name = "records"
 urlpatterns = [
 	# ex: /polls/
 	path("", views.index, name="index"),  # トップページ
-	path("obtain/", views.obtain_list, name="obtain_list"),  # 入手記録一覧
-	path("obtain/edit", views.ObtainEditView.as_view(), name="obtain_edit"),  # 入手記録編集
-	path("obtain/<int:pk>", views.obtain_detail, name="obtain_detail"),  # 入手記録詳細
-	path("items/", views.items, name="items"),  # 書籍一覧
-	path("item-edit", views.item_edit, name="item_edit"),  # 書籍情報編集
-	path("item/<str:pk>", views.item_detail, name="item_detail"),  # 書籍情報詳細
+	path("acquisition/", views.acquisition_list, name="acquisition_list"),  # 入手記録一覧
+	path("acquisition/new", views.AcquisitionEditView.as_view(), name="acquisition_new"),  # 入手記録編集
+	path("acquisition/<int:pk>", views.acquisition_detail, name="acquisition_detail"),  # 入手記録詳細
+	path("acquisition/<int:pk>/edit", views.AcquisitionEditView.as_view(), name="acquisition_edit"),  # 入手記録編集
+	path("acquisition/<int:pk>/delete", views.acquisition_delete, name="acquisition_delete"),  # 入手記録編集
+	path("book/", views.book_list, name="book_list"),  # 書籍一覧
+	path("book/new", views.BookEditView.as_view(), name="book_new"),  # 書籍一覧
+	path("book/<str:pk>", views.book_detail, name="book_detail"),  # 書籍情報詳細
+	path("book/<str:pk>/edit", views.BookEditView.as_view(), name="book_edit"),  # 書籍情報編集
+	path("book/<str:pk>/delete", views.book_delete, name="book_delete"),  # 書籍情報編集
 	path("stats/", views.stats, name="stats"),  # 統計
 ]

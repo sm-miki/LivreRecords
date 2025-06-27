@@ -1,0 +1,58 @@
+{% extends 'records/base.html' %}
+{% load static %}
+{% load record_extras %}
+
+{% block title %}入手記録一覧{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
+
+<h2>入手記録一覧</h2>
+
+<a href="{% url 'records:acquisition_new' %}">
+	<button>新規登録</button>
+</a>
+
+<div class="item-container">
+{% for record in records %}
+	<div class="item-card">
+		<div class="inline-flow">
+			<div class="item-type-symbol {{ record.acquisition_type }}-acquisition-type">
+				{{ record.acquisition_type_label }}
+			</div>
+			<div class="text-item">
+				<a href="{% url 'records:acquisition_detail' record.id %}">
+					{{ record.acquisition_date_str | default:"&lt;日時未設定&gt;" }} {{ record.store_name |default:"&lt;店舗未設定&gt;" }}
+				</a>
+			</div>
+		</div>
+		<div class="inline-flow">
+			<div class="text-item">
+				{{ record.total_quantity }}点 {{ record.total | currency_format:record.currency_code | default:"" }}
+			</div>
+		</div>
+		<div class="inline-flow">
+			<div class="text-item">
+				取引番号: {{ record.transaction_number | default:"-" }}
+			</div>
+		</div>
+		<div class="inline-flow">
+			<button type="submit" class="btn-primary" onclick="location.href='{% url 'records:acquisition_edit' record.pk %}'">
+				編集
+			</button>
+			<form action="{% url 'records:acquisition_delete' record.pk %}" method="post" style="display: inline;">
+				{% csrf_token %}
+				<button type="submit" class="btn btn-danger" onclick="return confirm('本当にこの入手記録を削除しますか？ この操作は取り消せません。');">
+					削除
+				</button>
+			</form>
+		</div>
+	</div>
+{% empty %}
+	<div>該当する記録がありません</div>
+{% endfor %}
+</div>
+
+{% endblock %}

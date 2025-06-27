@@ -1,0 +1,45 @@
+{% extends 'records/base.html' %}
+{% load static %}
+{% load record_extras %}
+
+{% block title %}書籍一覧{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
+
+<h2>書籍一覧</h2>
+
+<a href="{% url 'records:book_new' %}">
+	<button>新規登録</button>
+</a>
+
+<div class="item-container">
+{% for record in records %}
+	<div class="item-card">
+		<div class="inline-flow">
+			<div class=".text-item">
+				<a href="{% url 'records:book_detail' record.id %}">
+					{{ record.title | default:"&lt;タイトル未設定&gt;" }}
+				</a>
+			</div>
+		</div>
+		<div class="inline-flow">
+			<button type="submit" class="btn-primary" onclick="location.href='{% url 'records:book_edit' record.pk %}'">
+				編集
+			</button>
+			<form action="{% url 'records:book_delete' record.pk %}" method="post" style="display: inline;">
+				{% csrf_token %}
+				<button type="submit" class="btn btn-danger" onclick="return confirm('本当にこの入手記録を削除しますか？ この操作は取り消せません。');">
+					削除
+				</button>
+			</form>
+		</div>
+	</div>
+{% empty %}
+	<div>該当する記録がありません</div>
+{% endfor %}
+</div>
+
+{% endblock %}

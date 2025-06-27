@@ -1,6 +1,7 @@
+<!DOCTYPE html>
+
 {% load static %}
 
-<!DOCTYPE html>
 <html lang="ja">
 <head>
 	<meta charset="UTF-8">
@@ -12,11 +13,25 @@
 <body>
 	<div class="wrapper">
 		<div class="header">
-			<h1><a href="{% url 'records:index' %}">Livre Records</a></h1>
+			<div class="logo"><a href="{% url 'records:index' %}">Livre Records</a></div>
+			<div class="navigation">
+				<div class="menu-item">
+					<a href="{% url 'records:acquisition_list' %}">入手記録一覧</a>
+				</div>
+				<div class="menu-item">
+					<a href="{% url 'records:book_list' %}">書籍一覧</a>
+				</div>
+				<div class="menu-item">
+					<a href="{% url 'records:stats' %}">統計</a>
+				</div>
+			</div>
 		</div>
 
 		<div class="content">
-			{% block content %} {% endblock %}
+			{% block breadcrumbs %}{% endblock %}
+
+			{% block content %}
+			{% endblock %}
 		</div>
 
 		<div class="footer">

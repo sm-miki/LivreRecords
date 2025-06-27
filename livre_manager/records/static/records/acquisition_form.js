@@ -1,4 +1,4 @@
-// static/js/obtain_form.js
+/* static/js/acquisition_form.js */
 
 (() => {
 	function validateDatetime(value) {
@@ -41,34 +41,59 @@
 	}
 
 	window.addEventListener('DOMContentLoaded', function() {
-		// 1) 入手日時の入力欄とエラー表示用要素、Submit ボタンを取得
-		const obtainDateInput = document.getElementById('id_obtain_date_str');
+		// 入手日時の入力欄とエラー表示用要素、Submit ボタンを取得
+		const form = document.querySelector('form');
+		const acquisitionDateInput = document.getElementById('id_acquisition_date_str');
 		const totalInput = document.getElementById('id_total');
 		const subtotalInput = document.getElementById('id_subtotal');
 		const taxInput = document.getElementById('id_tax');
 		const extraFeeInput = document.getElementById('id_extra_fee');
 
+		/* ダーティフラグの管理と離脱時の警告表示 */
+
+		// フォームに変更があったかどうかのフラグ
+		let formModified = false;
+
+		form.addEventListener('change', () => {
+			formModified = true;
+		});
+		form.addEventListener('input', () => {
+			formModified = true;
+		});
+
+		// ページ離脱時の確認ダイアログ
+		window.addEventListener('beforeunload', function(e) {
+			if (formModified) {
+				// ブラウザのデフォルトの確認メッセージを表示
+				e.preventDefault();
+				e.returnValue = ''; // 古いブラウザのために必要
+			}
+		});
+
+
+		/* エラーデータ検証 */
+
 		// フォーム全体のエラー状態を管理するフラグ
 		const errors = new Map();		// id: [msg, focusBody]
 		let validations = {};
 
-		// 2) 入力時（input）／フォーカスアウト時（blur）にバリデート
-		function validateObtainDate() {
-			const val = obtainDateInput.value.trim();
+		// 入力時（input）／フォーカスアウト時（blur）にバリデート
+		function validateAcquisitionDate() {
+			const val = acquisitionDateInput.value.trim();
 			if (val !== '' && !validateDatetime(val)) {
 				// 不正データ
 				msg = '不正な日時です。「YYYY/MM/DD hh:mm:ss」の形式で入力してください。（時刻は省略可能）';
-				showWarning(obtainDateInput, msg);
-				errors.set('obtainDate', [msg, obtainDateInput]);
+				showWarning(acquisitionDateInput, msg);
+				errors.set('acquisitionDate', [msg, acquisitionDateInput]);
 			} else {
 				// 正常
-				showWarning(obtainDateInput, '');
-				errors.delete('obtainDate');
+				showWarning(acquisitionDateInput, '');
+				errors.delete('acquisitionDate');
 			}
 		}
 
-		validations['obtainDate'] = {
-			validator: validateObtainDate, targets: [obtainDateInput]
+		validations['acquisitionDate'] = {
+			validator: validateAcquisitionDate, targets: [acquisitionDateInput]
 		};
 
 		function validateTotal() {
@@ -109,7 +134,6 @@
 		}
 
 		// フォーム送信時にチェック
-		const form = document.querySelector('form');
 		form.addEventListener('submit', function(e) {
 			// 送信前に最終チェック
 			if (validate() /* || 他のエラー */) {
@@ -122,10 +146,15 @@
 				// メッセージボックスを表示
 //				errorSummary = [...errors].map(([k, [msg, focusBody]]) => msg).join('\n');
 //				alert(errorSummary);
+			} else {
+				// エラーがない場合、フォームが送信されるので formModified を false に設定
+				formModified = false;
 			}
 		});
 
 		// ページロード後に一度チェックを走らせておく
 		validate();
+
+		/* end: エラー検証 */
 	});
 })();
