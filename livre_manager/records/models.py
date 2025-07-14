@@ -3,7 +3,11 @@ records/models.py
 """
 from datetime import datetime
 from django.db import models
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 import dateutil.parser
+
+from .currency import CURRENCY_CODE_CHOICES, JPY
 
 # Create your models here.
 
@@ -12,48 +16,102 @@ default_date = datetime(1, 1, 1)
 def validate_datetime(s):
 	return dateutil.parser.parse(s, default=default_date)
 
-class AcquisitionRecord(models.Model):
+class Acquisition(models.Model):
 	"""
 	入手記録テーブルのフィールドを定義する。
 	"""
-	# 入手タイプ。
+	
+	# 入手タイプ
 	ACQUISITION_TYPE_CHOICES = {
 		'purchase': '購入',
 		'other': 'その他',
 	}
-	acquisition_type = models.CharField(max_length=10, choices=ACQUISITION_TYPE_CHOICES, default='purchase')
-	# 取得日時 (生文字列形式。正規化済み)
-	acquisition_date_str = models.TextField(null=False, blank=True)
-	# 取得日時 (日時型)
-	acquisition_date = models.DateTimeField(null=True, blank=True)
+	acquisition_type = models.CharField(
+		max_length=10,
+		choices=ACQUISITION_TYPE_CHOICES,
+		default='purchase',
+		verbose_name='入手タイプ',
+		help_text='入手方法（購入/その他）',
+	)
+	# 取得日時
+	acquisition_date_str = models.TextField(
+		null=False,
+		blank=True,
+		verbose_name='取得日時（文字列）',
+		help_text='取得日時を文字列で記録'
+	)
+	acquisition_date = models.DateTimeField(
+		null=True,
+		blank=True,
+		verbose_name='取得日時',
+		help_text='取得日時（日時型）'
+	)
 	# 店舗名
-	store_name = models.TextField(null=False, blank=True)
+	store_name = models.TextField(
+		null=False,
+		blank=True,
+		verbose_name='店舗名',
+		help_text='購入・取得した店舗名'
+	)
 	# 取引番号
-	transaction_number = models.TextField(null=False, blank=True)
+	transaction_number = models.TextField(
+		null=False,
+		blank=True,
+		verbose_name='取引番号',
+		help_text='取引番号やレシート番号'
+	)
 	# その他取引情報
-	transaction_context = models.TextField(null=False, blank=True)
+	transaction_context = models.TextField(
+		null=False,
+		blank=True,
+		verbose_name='取引情報',
+		help_text='その他の取引に関する情報'
+	)
 	# 担当者情報
-	staff = models.TextField(null=False, blank=True)
+	staff = models.TextField(
+		null=False,
+		blank=True,
+		verbose_name='担当者',
+		help_text='担当スタッフ名'
+	)
 	# 通貨単位
-	NULL_CURRENCY_CODE = ''
-	JPY = 'JPY'
-	USD = 'USD'
-	
-	CURRENCY_CODE_CHOICES = {
-		NULL_CURRENCY_CODE: u"---",
-		JPY: u"円",
-		USD: u"ドル(USD)",
-	}
-	currency_code = models.CharField(max_length=10, choices=CURRENCY_CODE_CHOICES, blank=True, default=JPY)
+	currency_code = models.CharField(
+		max_length=10,
+		choices=CURRENCY_CODE_CHOICES,
+		blank=True,
+		default=JPY,
+		verbose_name='通貨単位',
+		help_text='支払いに使用した通貨'
+	)
 	
 	# 合計支払金額
-	total = models.IntegerField(null=True, blank=True)
+	total = models.IntegerField(
+		null=True,
+		blank=True,
+		verbose_name='合計支払金額',
+		help_text='支払った合計金額（税込）'
+	)
 	# 税抜金額
-	subtotal = models.IntegerField(null=True, blank=True)
+	subtotal = models.IntegerField(
+		null=True,
+		blank=True,
+		verbose_name='税抜金額',
+		help_text='税抜の合計金額'
+	)
 	# 税額
-	tax = models.IntegerField(null=True, blank=True)
+	tax = models.IntegerField(
+		null=True,
+		blank=True,
+		verbose_name='税額',
+		help_text='消費税額'
+	)
 	# その他費用 (送料など)
-	extra_fee = models.IntegerField(null=True, blank=True, default=0)
+	extra_fee = models.IntegerField(
+		null=True,
+		blank=True,
+		verbose_name='その他費用',
+		help_text='送料など追加費用'
+	)
 	
 	# 支払い方法
 	PAYMENT_METHOD_CHOICES = {
@@ -61,17 +119,42 @@ class AcquisitionRecord(models.Model):
 		'cash': '現金',
 		'credit': 'クレジットカード',
 	}
-	payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, blank=True, default='')
+	payment_method = models.CharField(
+		max_length=10,
+		choices=PAYMENT_METHOD_CHOICES,
+		blank=True,
+		default='',
+		verbose_name='支払い方法',
+		help_text='現金・クレジットカード等'
+	)
 	
 	# レシート画像
-	receipt_image = models.ImageField(null=True, blank=True)
+	receipt_image = models.ImageField(
+		null=True,
+		blank=True,
+		upload_to='receipts/',
+		verbose_name='レシート画像',
+		help_text='レシートの画像ファイル'
+	)
 	# レシート画像 (切り抜き後)
-	receipt_image_cropped = models.ImageField(null=True, blank=True)
+	receipt_image_cropped = models.ImageField(
+		null=True,
+		blank=True,
+		verbose_name='レシート画像（切り抜き）',
+		help_text='切り抜き済みレシート画像'
+	)
 	
-	# レコード作成日時
-	created_at = models.DateTimeField(auto_now_add=True)
-	# レコード更新日時
-	updated_at = models.DateTimeField(auto_now=True)
+	# レコード作成・更新日時（管理用）
+	created_at = models.DateTimeField(
+		auto_now_add=True,
+		verbose_name='作成日時',
+		help_text='レコード作成日時'
+	)
+	updated_at = models.DateTimeField(
+		auto_now=True,
+		verbose_name='更新日時',
+		help_text='レコード更新日時'
+	)
 	
 	READONLY_FIELDS = (
 		'created_at', 'updated_at',
@@ -107,9 +190,10 @@ class AcquiredItem(models.Model):
 	"""
 	入手記録テーブルのフィールドを定義する。
 	"""
-	acquisition_record = models.ForeignKey(
-		AcquisitionRecord, on_delete=models.CASCADE, related_name='items'
+	acquisition = models.ForeignKey(
+		Acquisition, on_delete=models.CASCADE, related_name='items'
 	)
+	order = models.PositiveIntegerField(default=0, help_text="Lower numbers appear first")
 	
 	# 項目タイプ
 	ITEM_TYPE_CHOICES = {
@@ -117,7 +201,8 @@ class AcquiredItem(models.Model):
 		'other': u"その他",
 	}
 	item_type = models.CharField(max_length=20, choices=ITEM_TYPE_CHOICES, default='book')
-	# 商品・書籍ID
+	
+	# 書籍識別ID（ISBNなど）
 	item_id = models.TextField(null=True, blank=True)
 	# 分類
 	genre_code = models.TextField(blank=True)
@@ -144,10 +229,10 @@ class AcquiredItem(models.Model):
 	)
 	
 	def __str__(self):
-		return f"{self.item_type}: {self.item_id} - {self.description} ({self.acquisition_record})"
+		return f"{self.item_type}: {self.item_id} - {self.description} ({self.acquisition})"
 	
 	class Meta:
-		ordering = ["-created_at"]
+		order_with_respect_to = 'acquisition'
 		verbose_name = '入手項目'
 		verbose_name_plural = '入手項目'
 	
@@ -167,14 +252,16 @@ class Book(models.Model):
 	asin = models.TextField(null=True, blank=True)
 	# 出版社
 	publisher = models.TextField(null=True, blank=True)
-	# 出版日
+	# 発売日
 	publication_date_str = models.TextField(null=True, blank=True)
 	# 出版日シリアル値
 	publication_date = models.DateField(null=True, blank=True)
 	# 定価
 	price = models.IntegerField(null=True, blank=True)
+	# 通貨単位
+	currency_code = models.CharField(max_length=10, choices=CURRENCY_CODE_CHOICES, blank=True, default=JPY)
 	# 書影画像
-	cover_image = models.ImageField(null=True, blank=True)
+	cover_image = models.ImageField(null=True, blank=True, upload_to='covers/')
 	# ユーザーメモ
 	user_memo = models.TextField(null=False, blank=True)
 	# 所有済みフラグ
@@ -200,14 +287,21 @@ class Book(models.Model):
 	def clean(self):
 		if self.has_item is None:
 			self.has_item = False
+		
+		if self.publication_date_str:
+			try:
+				self.publication_date = validate_datetime(self.publication_date_str)
+			except ValueError:
+				self.publication_date = None
+				raise
 
 class BookAuthorRelation(models.Model):
 	book_record = models.ForeignKey(
 		Book, on_delete=models.CASCADE, related_name='authors'
 	)
 	
-	# # 記載順
-	# order = models.IntegerField(null=False, blank=True)
+	# 対応するBook内での記載順
+	# order = models.PositiveIntegerField(default=0, null=False, blank=True)
 	# 著者名
 	author_name = models.TextField()
 	# 役割
@@ -218,14 +312,11 @@ class BookAuthorRelation(models.Model):
 	# レコード更新日時
 	updated_at = models.DateTimeField(auto_now=True)
 	
-	READONLY_FIELDS = (
-		'created_at', 'updated_at',
-	)
-	
 	def __str__(self):
-		return f"{self.author_name} {self.role} ({self.book_record.id} {self.book_record.title})"
+		return f"{self.author_name} {self.role} ({self.book_record.isbn} - {self.book_record.title})"
 	
 	class Meta:
-		ordering = ["-created_at"]
+		order_with_respect_to = 'book_record'
+		# ordering = ['order']
 		verbose_name = '著者'
 		verbose_name_plural = '著者'

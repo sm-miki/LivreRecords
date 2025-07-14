@@ -9,36 +9,45 @@
 
 {% block content %}
 
-<h2>入手記録一覧</h2>
+<div class="content-header">
+	<div class="content-title">
+		入手記録一覧
+	</div>
+</div>
 
-<a href="{% url 'records:acquisition_new' %}">
-	<button>新規登録</button>
-</a>
+<div class="control-bar inline-flow">
+	<a href="{% url 'records:acquisition_new' %}" class="balloon-button">
+		<img src="{% static 'records/images/plus_circle_icon.png' %}" alt="plus" class="balloon-icon">
+		新規登録
+	</a>
+</div>
 
 <div class="item-container">
 {% for record in records %}
 	<div class="item-card">
-		<div class="inline-flow">
+		<div class="inline">
 			<div class="item-type-symbol {{ record.acquisition_type }}-acquisition-type">
 				{{ record.acquisition_type_label }}
 			</div>
 			<div class="text-item">
 				<a href="{% url 'records:acquisition_detail' record.id %}">
-					{{ record.acquisition_date_str | default:"&lt;日時未設定&gt;" }} {{ record.store_name |default:"&lt;店舗未設定&gt;" }}
+					{{ record.acquisition_date_str | default:"&lt;日時未登録&gt;" }} {{ record.store_name |default:"&lt;店舗未登録&gt;" }}
 				</a>
 			</div>
 		</div>
 		<div class="inline-flow">
 			<div class="text-item">
-				{{ record.total_quantity }}点 {{ record.total | currency_format:record.currency_code | default:"" }}
+				<span class="label">取引番号</span>: {{ record.transaction_number | default:"-" }}
 			</div>
 		</div>
 		<div class="inline-flow">
 			<div class="text-item">
-				取引番号: {{ record.transaction_number | default:"-" }}
+				{{ record.total_quantity }}点
+				{% inline_price_format record.total record.subtotal record.tax record.currency_code as price_str %}
+				{{ price_str | default:"&lt;金額未設定&gt;" }}
 			</div>
 		</div>
-		<div class="inline-flow">
+		<div class="inline-flow card-control">
 			<button type="submit" class="btn-primary" onclick="location.href='{% url 'records:acquisition_edit' record.pk %}'">
 				編集
 			</button>

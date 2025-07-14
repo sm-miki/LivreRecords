@@ -12,7 +12,7 @@
 
 <h2>{% if is_new_record %}書籍情報の新規登録{% else %}書籍情報の編集{% endif %}</h2>
 
-<form method="post">
+<form method="post" enctype="multipart/form-data" onkeydown="return event.key != 'Enter';">
 	{% csrf_token %}
 	{% for hidden in book_form.hidden_fields %}
 		{{ hidden }}
@@ -53,7 +53,7 @@
 
 			<!-- 行の追加 -->
 			{% for form in author_formset %}
-			<tr class="acquired-item">
+			<tr class="formset">
 				{% for hidden in form.hidden_fields %}
 					{{ hidden }}
 				{% endfor %}
@@ -81,5 +81,5 @@
 {% endblock %}
 
 {% block extra_js %}
-	<script src="{% static 'records/book_form.js' %}"></script>
+	<script src="{% static 'records/js/book_form.js' %}"></script>
 {% endblock %}

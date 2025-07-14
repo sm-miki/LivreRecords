@@ -4,7 +4,7 @@
 {% load static %}
 {% load record_extras %}
 
-{% block title %}入手記録 {{ record.acquisition_date_str | default:"" }} {{ record.store_name | default:"&lt;店舗未設定&gt;" }}{% endblock %}
+{% block title %}入手記録 {{ record.acquisition_date_str | default:"" }} {{ record.store_name | default:"&lt;店舗未登録&gt;" }}{% endblock %}
 
 {% block breadcrumbs %}
 	<div class="breadcrumbs">
@@ -14,14 +14,14 @@
 
 {% block content %}
 
-<div class="detail-header inline-flow">
-	<h2 class="item-title inline-flow">
+<div class="inline-flow content-header">
+	<div class="inline-flow content-title">
 		<div class="item-type-symbol {{ record.acquisition_type }}-acquisition-type">
-		{{ record.acquisition_type_label }}
+			{{ record.acquisition_type_label }}
 		</div>
-		<div class="text-item">{{ record.acquisition_date_str | default:"&lt;日時未設定&gt;" }}</div>
-		<div class="text-item">{{ record.store_name | default:"&lt;店舗未設定&gt;" }}</div>
-	</h2>
+		<div class="text-item">{{ record.acquisition_date_str | default:"&lt;日時未登録&gt;" }}</div>
+		<div class="text-item">{{ record.store_name | default:"&lt;店舗未登録&gt;" }}</div>
+	</div>
 	<div class="inline-flow right-align">
 		<button type="submit" class="btn-primary" onclick="location.href='{% url 'records:acquisition_edit' record.pk %}'">
 			編集
@@ -35,46 +35,57 @@
 	</div>
 </div>
 
-<div class="inline-flow right-align">
-	<div class="text-item">
-		最終更新: {{ record.updated_at |date:"Y/m/d H:i" }}
+<div class="horizontal-panes">
+	<div class="pane">
+		<div class="receipt-image-frame">
+			{# レシート画像 #}
+			{% if record.receipt_image %}
+			<img src="{{ record.receipt_image.url }}" alt="書籍カバー画像">
+			{% else %}
+			<img src="{% static 'records/images/no_image.png' %}" alt="画像なし">
+			{% endif %}
+		</div>
+	</div>
+	<div class="fill-pane">
+		<div class="text-item right-align">
+			最終更新: {{ record.updated_at |date:"Y/m/d H:i" }}
+		</div>
+		<table class="detail-table">
+			<tr>
+				<th>取引番号</th>
+				<td>{{ record.transaction_number |default:"-" }}</td>
+			</tr>
+			<tr>
+				<th>その他取引情報</th>
+				<td>{{ record.transaction_context |default:"-" }}</td>
+			</tr>
+			<tr>
+				<th>担当者</th>
+				<td>{{ record.staff |default:"-" }}</td>
+			</tr>
+			<tr>
+				<th>合計支払金額</th>
+				<td>{{ record.total |currency_format:record.currency_code |default:"-" }}</td>
+			</tr>
+			<tr>
+				<th>小計（税抜）</th>
+				<td>{{ record.subtotal |currency_format:record.currency_code |default:"-" }}</td>
+			</tr>
+			<tr>
+				<th>税額</th>
+				<td>{{ record.tax |currency_format:record.currency_code |default:"-" }}</td>
+			</tr>
+			<tr>
+				<th>送料等</th>
+				<td>{{ record.extra_fee |currency_format:record.currency_code |default:"-" }}</td>
+			</tr>
+			<tr>
+				<th>支払方法</th>
+				<td>{{ record.payment_method_label | default:"-" }}</td>
+			</tr>
+		</table>
 	</div>
 </div>
-
-<table class="detail-table">
-	<tr>
-		<th>取引番号</th>
-		<td>{{ record.transaction_number |default:"-" }}</td>
-	</tr>
-	<tr>
-		<th>その他取引情報</th>
-		<td>{{ record.transaction_context |default:"-" }}</td>
-	</tr>
-	<tr>
-		<th>担当者</th>
-		<td>{{ record.staff |default:"-" }}</td>
-	</tr>
-	<tr>
-		<th>合計支払金額</th>
-		<td>{{ record.total |currency_format:record.currency_code |default:"-" }}</td>
-	</tr>
-	<tr>
-		<th>小計（税抜）</th>
-		<td>{{ record.subtotal |currency_format:record.currency_code |default:"-" }}</td>
-	</tr>
-	<tr>
-		<th>税額</th>
-		<td>{{ record.tax |currency_format:record.currency_code |default:"-" }}</td>
-	</tr>
-	<tr>
-		<th>送料等</th>
-		<td>{{ record.extra_fee |currency_format:record.currency_code |default:"-" }}</td>
-	</tr>
-	<tr>
-		<th>支払方法</th>
-		<td>{{ record.payment_method_label | default:"-" }}</td>
-	</tr>
-</table>
 
 <h3>項目内訳</h3>
 
@@ -83,7 +94,7 @@
 <div class="item-container">
 {% for item in items %}
 	<div class="item-card">
-		<div class="inline-flow">
+		<div class="inline">
 			<div class="item-type-symbol {{ item.item_type }}-item-type">
 				{{ item.item_type_label }}
 			</div>
@@ -97,32 +108,26 @@
 					</div>
 				{% else %}
 					{# レコードがない場合、書名の代わりに商品説明と新規登録への案内を表示する。 #}
-					<div class="text-item">
-						{{ item.description | default:"&lt;商品説明なし&gt;" }}
+					<div class="text-item invalid-data">
+						&lt;書籍未登録&gt;
 					</div>
-					<a href="{% url 'records:book_new' %}?isbn={{ item.item_id }}&title={{ item.description }}" class="text-item">
-						書籍を登録
-					</a>
+					<div class="text-item">
+						<a href="{% url 'records:book_new' %}?isbn={{ item.item_id }}&title={{ item.description }}" class="text-item">
+							書籍を登録
+						</a>
+					</div>
 				{% endif %}
-			{% else %}
-				{# 書名の代わりに商品説明を表示する #}
-				<div>
-					{{ item.description | default:"&lt;商品説明なし&gt;" }}
-				</div>
 			{% endif %}
 		</div>
-		{% if item.item_type == "book" and item.book_record and item.description %}
-			{# 既存の書籍レコードがあり、かつ商品説明もある場合、商品説明を新しい行に表示する #}
-			<div class="inline-flow">
-				<div class="text-item"><strong>説明: </strong>{{ item.description }}</div>
-			</div>
-		{% endif %}
+		<div class="inline-flow">
+			<div class="text-item"><span class="label">説明: </span>{{ item.description }}</div>
+		</div>
 		<div class="inline-flow">
 			<div class="text-item">
-				<strong>{% if item.item_type == "book" %}書籍ID{% else %}商品ID{% endif %}: </strong>{{ item.item_id | default:"-" }}
+				<span class="label">{% if item.item_type == "book" %}書籍ID{% else %}商品ID{% endif %}: </span>{{ item.item_id | default:"-" }}
 			</div>
 			<div class="text-item">
-				<strong>分類:</strong> {{ item.genre_code | default:"-" }}
+				<span class="label">分類:</span> {{ item.genre_code | default:"-" }}
 			</div>
 		</div>
 		<div class="inline-flow">
@@ -131,24 +136,19 @@
 			</div>
 
 			<div class="text-item">
-				{% spaceless %}
-					{% if item.price %}
-						税込 {{ item.price | currency_format:record.currency_code }}
-						{% if item.net_price or item.tax %}({% endif %}
-						税抜{{ item.net_price | currency_format:record.currency_code }}
-						{% if item.net_price and item.tax %}+{% endif %}
-						{% if item.tax %}税{{ item.tax | currency_format:record.currency_code }}{% endif %}
-						{% if item.net_price or item.tax %}
-							)
-						{% endif %}
-					{% elif not item.net_price and not item.tax %}
-						&lt;金額未設定&gt;
-					{% else %}
-						税抜{{ item.net_price | currency_format:record.currency_code }}
-						{% if item.net_price and item.tax %}+{% endif %}
-						{% if item.tax %}税{{ item.tax | currency_format:record.currency_code }}{% endif %}
-					{% endif %}
-				{% endspaceless %}
+				{% if item.price %}
+					税込{{ item.price | currency_format:record.currency_code }}{% comment %}
+					{% endcomment %}{% if item.net_price or item.tax %}（{% endif %}{% comment %}
+					{% endcomment %}{% if item.net_price %}税抜{{ item.net_price | currency_format:record.currency_code }}{% endif %}{% comment %}
+					{% endcomment %}{% if item.net_price and item.tax %} + {% endif %}{% comment %}
+					{% endcomment %}{% if item.tax %}税{{ item.tax | currency_format:record.currency_code }}{% endif %}{% if item.net_price or item.tax %}）{% endif %}
+				{% elif not item.net_price and not item.tax %}
+					&lt;金額未登録&gt;
+				{% else %}
+					税抜{{ item.net_price | currency_format:record.currency_code }}{% comment %}
+					{% endcomment %}{% if item.net_price and item.tax %} + {% endif %}{% comment %}
+					{% endcomment %}{% if item.tax %}税{{ item.tax | currency_format:record.currency_code }}{% endif %}
+				{% endif %}
 			</div>
 		</div>
 	</div>

@@ -2,8 +2,8 @@ import numpy as np
 from pathlib import Path
 import traceback
 
-from ocr_engine.easyocr_engine import EasyOCREngine
-from reader import ReceiptReader, ReadResult
+from .ocr_engine import EasyOCREngine
+from .reader import ReceiptReader, ReadResult
 
 import cv2
 
@@ -21,7 +21,7 @@ class Tester:
 		self.ocr_engine = EasyOCREngine(lang_list)
 		self.reader = ReceiptReader(self.ocr_engine)
 		self.preprocess_types = [
-			('crop', { 'size_scale': (1.0, 1.0) }),
+			# ('crop', { 'size_scale': (1.0, 1.0) }),
 			# ('closing', { }),
 			('greyscale', { }),
 			# ('gamma_correction', { 'gamma': 0.9 }),
@@ -30,7 +30,10 @@ class Tester:
 	
 	def read(self, path):
 		try:
-			result: ReadResult = self.reader.read_receipt(path, self.preprocess_types)
+			with open(path, 'rb') as f:
+				image_bytes = f.read()
+			
+			result: ReadResult = self.reader.read_receipt(image_bytes, self.preprocess_types)
 			
 			overlay: np.ndarray = result.render_text_overlay()
 			
@@ -51,7 +54,7 @@ class Tester:
 		except Exception as e:
 			traceback.print_exc()
 
-def main():
+def test_ocr_cli():
 	tester = Tester()
 	
 	while True:
@@ -59,7 +62,8 @@ def main():
 		raw = input().strip(' ').strip('"')
 		
 		if raw:
+			print(rf"Processing: {raw}")
 			tester.read(raw)
 
 if __name__ == '__main__':
-	main()
+	test_ocr_cli()

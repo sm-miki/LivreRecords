@@ -1,11 +1,11 @@
 from django.contrib import admin
 
-from .models import AcquisitionRecord, AcquiredItem, Book, BookAuthorRelation
+from .models import Acquisition, AcquiredItem, Book, BookAuthorRelation
 
 # Register your models here.
 
-@admin.register(AcquisitionRecord)
-class AcquisitionRecordAdmin(admin.ModelAdmin):
+@admin.register(Acquisition)
+class AcquisitionAdmin(admin.ModelAdmin):
 	def get_readonly_fields(self, request, obj=None):
 		# 常にreadonlyにしたいフィールド
 		readonly_base_fields = ['created_at', 'updated_at']

@@ -1,11 +1,68 @@
 {% extends 'records/base.html' %}
 {% load static %}
+{% load record_extras %}
 
-{% block title %}統計データ{% endblock %}
+{% block title %}統計{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
 
 {% block content %}
 
-<div class="breadcrumbs">
+<div class="content-title">
 	統計
 </div>
+
+<h3>
+	入手記録
+</h3>
+
+<table class="detail-table">
+	<thead>
+		<th></th>
+		<th>全期間</th>
+		<th>今月</th>
+	</thead>
+	<tr>
+		<th>購入記録数</th>
+		<td>{{ total_acquisition_records }}</td>
+		<td>{{ this_month_total_acquisition_records }}</td>
+	</tr>
+	<tr>
+		<th>購入点数</th>
+		<td>{{ purchase_book_count }}</td>
+		<td>{{ this_month_purchase_book_count }}</td>
+	</tr>
+	<tr>
+		<th>その他入手点数</th>
+		<td>{{ other_acquisition_book_count }}</td>
+		<td>{{ this_month_other_acquisition_book_count }}</td>
+	</tr>
+	<tr>
+		<th>合計入手点数</th>
+		<td>{{ total_acquired_book_count }}</td>
+		<td>{{ this_month_total_acquired_book_count }}</td>
+	</tr>
+	<tr>
+		<th>購入金額</th>
+		<td>{{ purchase_total_amount }}</td>
+		<td>{{ this_month_purchase_total_amount }}</td>
+	</tr>
+</table>
+
+<h3>
+	書籍
+</h3>
+
+<table class="detail-table">
+	<tr>
+		<th>登録冊数</th>
+		<td>{{ total_registered_books }}</td>
+	</tr>
+	<tr>
+		<th>所有済み冊数</th>
+		<td>{{ owned_books_count }}</td>
+	</tr>
+</table>
+
 {% endblock %}

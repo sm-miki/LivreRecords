@@ -1,1 +1,2 @@
-from ocr_engine.easyocr_engine import EasyOCREngine
+from .reader import ReceiptReader
+from . import ocr_engine

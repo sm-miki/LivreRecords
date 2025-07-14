@@ -1,3 +1,4 @@
+import io
 from collections import deque
 from typing import Union
 import cv2
@@ -5,8 +6,8 @@ import numpy as np
 import re
 from PIL import Image, ImageDraw, ImageFont
 
-from ocr_engine.img_utils import cv2pil, pil2cv
-from ocr_engine.base_ocr_engine import BaseOCREngine, OCRTextBlock, OCRResult
+from .ocr_engine.img_utils import cv2pil, pil2cv
+from .ocr_engine.base_ocr_engine import BaseOCREngine, OCRTextBlock, OCRResult
 
 class OCRTextDetail:
 	def __init__(self, text_box: OCRTextBlock, center, size):
@@ -137,11 +138,28 @@ class ReceiptReader:
 		self.isbn_reg = re.compile(r"(^|[ :;,])(?P<isbn>978(\d){10})(?=[ :;,]|$)")
 	
 	def read_receipt(self,
-			image_path: str,
+			image,
 			preprocess_type: Union[str | list[str] | list[tuple[str, dict]] | None] = None
-	):
+	) -> ReadResult:
 		"""画像から文字を読み取る"""
-		ocr_result: OCRResult = self.ocr_engine.recognize(image_path, preprocess_type)
+		if image is None:
+			raise ValueError(r"Unexpected 'None' given in the 'image' argument.")
+		elif isinstance(image, bytes):
+			image_cv = cv2.imdecode(np.frombuffer(image, np.uint8), cv2.IMREAD_COLOR)
+		elif isinstance(image, np.ndarray):
+			image_cv = cv2.imdecode(image, cv2.IMREAD_COLOR)
+		elif isinstance(image, Image.Image):
+			image_cv = cv2.imdecode(np.array(image), cv2.IMREAD_COLOR)
+		elif isinstance(image, io.IOBase):
+			image_bytes = image.read()
+			image_cv = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
+		else:
+			raise TypeError(f"Unexpected type '{type(image)}' given in the 'image' argument. Only bytes, file-like object, numpy.ndarray, PIL.Image.Image are allowed.")
+		
+		if image_cv is None:
+			raise ValueError("画像ファイルのデコードに失敗しました。無効な画像ファイル形式か、ファイルが破損している可能性があります。")
+		
+		ocr_result: OCRResult = self.ocr_engine.recognize(image_cv, preprocess_type)
 		
 		# 文字列を行ごとにグループ分け
 		lines = self.group_by_line(ocr_result.texts)
@@ -257,7 +275,7 @@ class ReceiptReader:
 		return [[sorted_blocks[i] for i in boxes_in_line[k]] for k in line_order]
 	
 	def parse_receipt_data(self, lines: list[list[OCRTextDetail]]):
-		data = { 'books': [] }
+		data = { 'items': [] }
 		
 		# レシート内の文字領域の最大範囲を特定する
 		# horizontal_bounds = np.array([(line[-1].left, line[-1].right) for line in lines])
@@ -267,6 +285,6 @@ class ReceiptReader:
 		for line in lines:
 			for block in line:
 				if m := self.isbn_reg.search(block.text):
-					data['books'].append({ 'isbn': m.group('isbn') })
+					data['items'].append({ 'isbn': m.group('isbn') })
 		
 		return data

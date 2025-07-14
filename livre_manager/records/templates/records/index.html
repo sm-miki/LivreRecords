@@ -1,16 +1,189 @@
 {% extends 'records/base.html' %}
 
 {% load static %}
+{% load record_extras %}
 
 {% block title %}Livre Records{% endblock %}
 {% block title_suffix %}{% endblock %}
 
 {% block content %}
-<h2>トップページ</h2>
 
-<ul>
-	<li><a href="{% url 'records:acquisition_list' %}">入手記録一覧</a></li>
-	<li><a href="{% url 'records:book_list' %}">書籍一覧</a></li>
-	<li><a href="{% url 'records:stats' %}">統計</a></li>
-</ul>
+
+<div class="content-header">
+	<div class="content-title">
+		トップページ
+	</div>
+</div>
+
+<div class="control-bar inline-flow">
+	<a href="{% url 'records:acquisition_new' %}" class="balloon-button">
+		<img src="{% static 'records/images/plus_circle_icon.png' %}" alt="plus" class="balloon-icon">
+		<div>入手記録の新規登録</div>
+	</a>
+	<a href="{% url 'records:book_new' %}" class="balloon-button">
+		<img src="{% static 'records/images/plus_circle_icon.png' %}" alt="plus" class="balloon-icon">
+		<div>書籍の新規登録</div>
+	</a>
+
+</div>
+
+<h3>新着入手記録（更新順）</h3>
+
+<div class="item-container boxed">
+	{% for record in recent_acquisitions %}
+		<div class="item-card">
+			<div class="inline">
+				<div class="item-type-symbol {{ record.acquisition_type }}-acquisition-type">
+					{{ record.acquisition_type_label }}
+				</div>
+				<div class="text-item">
+					<a href="{% url 'records:acquisition_detail' record.id %}">
+						{{ record.acquisition_date_str | default:"&lt;日時未登録&gt;" }} {{ record.store_name |default:"&lt;店舗未登録&gt;" }}
+					</a>
+				</div>
+			</div>
+			<div class="inline-flow">
+				<div class="text-item">
+					<span class="label">取引番号</span>: {{ record.transaction_number | default:"-" }}
+				</div>
+			</div>
+			<div class="inline-flow">
+				<div class="text-item">
+					{{ record.total_quantity }}点
+					{% inline_price_format record.total record.subtotal record.tax record.currency_code as price_str %}
+					{{ price_str | default:"&lt;金額未設定&gt;" }}
+				</div>
+			</div>
+			<div class="inline-flow card-control">
+				<button type="submit" class="btn-primary" onclick="location.href='{% url 'records:acquisition_edit' record.pk %}'">
+					編集
+				</button>
+				<form action="{% url 'records:acquisition_delete' record.pk %}" method="post" style="display: inline;">
+					{% csrf_token %}
+					<button type="submit" class="btn btn-danger" onclick="return confirm('本当にこの入手記録を削除しますか？ この操作は取り消せません。');">
+						削除
+					</button>
+				</form>
+			</div>
+		</div>
+	{% empty %}
+	<p>新着の入手記録はありません。</p>
+	{% endfor %}
+</div>
+
+<h3>発売済み（{{ recent_books | length }}件）</h3>
+
+<div class="item-container boxed">
+	{% for record in recent_books %}
+		<div class="item-card">
+			<div class="inline-flow">
+				<a class="pane thumb-cover-frame" href="{% url 'records:book_detail' record.id %}">
+					{# カバー画像 #}
+					{% if record.cover_image %}
+						<img src="{{ record.cover_image.url }}" alt="書籍カバー画像">
+					{% else %}
+						<img src="{% static 'records/images/no_image.png' %}" alt="画像なし">
+					{% endif %}
+				</a>
+				<div class="pane">
+					<div class="inline-flow">
+						<div class=".text-item">
+							<a href="{% url 'records:book_detail' record.id %}">
+								{{ record.title | default:"&lt;書名未登録&gt;" }}{% if record.series %}（{{ record.series | default:"-" }}）{% endif %}
+							</a>
+						</div>
+					</div>
+					<div class="inline-flow">
+						<div class="text-item">
+							{% if record.authors.all %}
+								{% for author in record.authors.all %}
+									{{ author.author_name }}{% if author.role %}（{{ author.role }}）{% endif %}{% if not forloop.last %}、{% endif %}
+								{% endfor %}
+							{% else %}
+								-
+							{% endif %}
+						</div>
+					</div>
+					<div class="inline-flow">
+						<div class="text-item">
+							{{ record.publisher | default:"&lt;出版社未登録&gt;" }}（{{ record.publication_date_str | default:"&lt;発売日未登録&gt;" }}）
+						</div>
+					</div>
+					<div class="inline-flow">
+						<div class="text-item">
+							<span class="label">定価: </span>{{ record.price | currency_format:record.currency_code | default:"-" }}
+						</div>
+					</div>
+					<div class="inline-flow">
+						<div class="text-item">
+							<span class="label">ISBN: </span>{{ record.isbn | default:"-" }}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	{% empty %}
+		<p>最近発売された書籍はありません。</p>
+	{% endfor %}
+</div>
+
+<h3>近日発売予定（{{ upcoming_books | length }}件）</h3>
+
+<div class="item-container boxed">
+	{% for record in upcoming_books %}
+		<div class="item-card">
+			<div class="inline-flow">
+				<a class="pane thumb-cover-frame" href="{% url 'records:book_detail' record.id %}">
+					{# カバー画像 #}
+					{% if record.cover_image %}
+						<img src="{{ record.cover_image.url }}" alt="書籍カバー画像">
+					{% else %}
+						<img src="{% static 'records/images/no_image.png' %}" alt="画像なし">
+					{% endif %}
+				</a>
+				<div class="pane">
+					<div class="inline-flow">
+						<div class=".text-item">
+							<a href="{% url 'records:book_detail' record.id %}">
+								{{ record.title | default:"&lt;書名未登録&gt;" }}{% if record.series %}（{{ record.series | default:"-" }}）{% endif %}
+							</a>
+						</div>
+					</div>
+					<div class="inline-flow">
+						<div class="text-item">
+							{% if record.authors.all %}
+								{% for author in record.authors.all %}
+									{{ author.author_name }}{% if author.role %}（{{ author.role }}）{% endif %}{% if not forloop.last %}、{% endif %}
+								{% endfor %}
+							{% else %}
+								-
+							{% endif %}
+						</div>
+					</div>
+					<div class="inline-flow">
+						<div class="text-item">
+							{{ record.publisher | default:"&lt;出版社未登録&gt;" }}（{{ record.publication_date_str | default:"&lt;発売日未登録&gt;" }}）
+						</div>
+					</div>
+					<div class="inline-flow">
+						<div class="text-item">
+							<span class="label">定価: </span>{{ record.price | currency_format:record.currency_code | default:"-" }}
+						</div>
+					</div>
+					<div class="inline-flow">
+						<div class="text-item">
+							<span class="label">ISBN: </span>{{ record.isbn | default:"-" }}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	{% empty %}
+		<p>近日発売が予定されている書籍はありません。</p>
+	{% endfor %}
+</div>
+
+<div class="content-footer">
+</div>
+
 {% endblock %}

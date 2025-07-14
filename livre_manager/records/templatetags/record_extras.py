@@ -1,8 +1,12 @@
 from decimal import Decimal
+import six
 from django import template
+from django.template.base import Node
 from django.urls import reverse, reverse_lazy
+from django.utils.functional import keep_lazy
 
 from ..models import Book
+from ..currency import CURRENCY_SYMBOLS
 
 register = template.Library()
 
@@ -24,12 +28,6 @@ def format_decimal(value):
 					break
 	return s
 
-CURRENCY_SYMBOLS = {
-	'JPY': '￥',
-	'USD': '＄',
-	'EUR': '€',
-}
-
 @register.filter
 def currency_format(amount, currency_code):
 	if amount is None:
@@ -37,6 +35,24 @@ def currency_format(amount, currency_code):
 	
 	symbol = CURRENCY_SYMBOLS.get(currency_code, '')
 	return f"{symbol}{format_decimal(amount)}"
+
+@register.simple_tag
+def inline_price_format(price, net_price, tax, currency_code) -> str:
+	s = ""
+	if net_price is not None:
+		if tax is not None:
+			s = f"税抜 {currency_format(net_price, currency_code)} + 税 {currency_format(tax, currency_code)}"
+		else:
+			s = f"税 {currency_format(tax, currency_code)}"
+	elif tax is not None:
+		s = f"税 {currency_format(tax, currency_code)}"
+	
+	if price is None:
+		return s
+	elif s:
+		return f"税込 {currency_format(price, currency_code)} ({s})"
+	else:
+		return f"税込 {currency_format(price, currency_code)}"
 
 # @register.simple_tag
 # def book_detail_url(isbn):
@@ -49,3 +65,20 @@ def currency_format(amount, currency_code):
 # 		return reverse('records:book_detail', args=[book.pk])
 # 	except Book.DoesNotExist:
 # 		return ''
+
+# Djangoテンプレートタグと文字列の間の改行を削除する
+# 参考: https://stackoverflow.com/questions/33479363/remove-line-breaks-from-django-template/33479624
+@register.tag
+def linebreakless(parser, token):
+	nodelist = parser.parse(('endlinebreakless',))
+	parser.delete_first_token()
+	return LinebreaklessNode(nodelist)
+
+class LinebreaklessNode(Node):
+	def __init__(self, nodelist):
+		self.nodelist = nodelist
+	
+	def render(self, context):
+		strip_line_breaks = keep_lazy(six.text_type)(lambda x: x.replace('\n\n', '\n'))
+		
+		return strip_line_breaks(self.nodelist.render(context).strip())

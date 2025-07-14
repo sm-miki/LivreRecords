@@ -20,6 +20,7 @@ class BookForm(forms.ModelForm):
 			'publisher': { 'label': '出版社', 'widget': forms.TextInput() },
 			'publication_date_str': { 'label': '出版日', 'widget': forms.TextInput() },
 			'price': { 'label': '定価' },
+			'currency_code': { 'label': '通貨' },
 			'cover_image': { 'label': 'カバー画像' },
 			'user_memo': { 'label': 'メモ', 'widget': forms.Textarea() },
 		}
@@ -47,4 +48,5 @@ AuthorFormSet = inlineformset_factory(
 	form=AuthorForm,
 	extra=5,  # 最初から表示される行数
 	can_delete=True,  # 行の削除を許可するか
+	can_order=True,
 )

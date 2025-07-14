@@ -1,28 +1,54 @@
 """
 records/views.py
 """
+import json
 from django.db import transaction
-from django.db.models import F
-from django.http import HttpResponse, HttpResponseRedirect
+from django.db.models.functions import TruncMonth
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse, reverse_lazy
-from django.views import generic
-from django.utils import timezone
 from django.contrib import messages
+from django.http import JsonResponse
 from django.views.generic import TemplateView
+from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Sum, Q, F
+from datetime import datetime, date, timedelta  # datetime, date, timedelta をインポート
+from django.utils import timezone  # タイムゾーン対応のためにtimezoneをインポート
 
-from .models import AcquisitionRecord, Book, BookAuthorRelation
+from .receipt_reader import ReceiptReader
+from .receipt_reader.ocr_engine import EasyOCREngine
+
+from .models import Acquisition, Book, AcquiredItem
 from .acquisition_form import AcquisitionForm, AcquiredItemForm, AcquisitionItemFormSet
 from .book_form import BookForm, AuthorForm, AuthorFormSet
 
-# トップページ
 def index(request):
-	return render(request, 'records/index.html')
+	"""
+	トップページ
+	"""
+	recent_acquisitions = Acquisition.objects.order_by('-updated_at')[:5]
+	# 近日発売の書籍一覧
+	upcoming_books = Book.objects.filter(
+		publication_date__gte=date.today(),
+		publication_date__lte=date.today() + timedelta(days=14)
+	).order_by('publication_date')
+	# 近日発売の書籍一覧
+	recent_books = Book.objects.filter(
+		publication_date__gte=date.today() - timedelta(days=14),
+		publication_date__lte=date.today()
+	).order_by('publication_date')
+	
+	return render(request, 'records/index.html', {
+		'recent_acquisitions': recent_acquisitions,
+		'recent_books': recent_books,
+		'upcoming_books': upcoming_books,
+	})
 
-# 入手記録一覧画面
 def acquisition_list(request):
+	"""
+	入手記録の一覧表示を行うビュー。
+	"""
 	# 動的にモデルのフィールドを取得
-	model = AcquisitionRecord
+	model = Acquisition
 	fields = [f for f in model._meta.fields if f.name not in model.READONLY_FIELDS]
 	
 	# フィールド名とヘッダー用ラベルを準備
@@ -39,9 +65,11 @@ def acquisition_list(request):
 	}
 	return render(request, 'records/acquisition_list.html', context)
 
-# 入手記録詳細画面
 def acquisition_detail(request, pk):
-	record = get_object_or_404(AcquisitionRecord, pk=pk)
+	"""
+	入手記録の詳細表示を行うビュー。
+	"""
+	record = get_object_or_404(Acquisition, pk=pk)
 	
 	items = record.items.all()
 	# 各 item に対応する Book レコードを探して添付
@@ -59,12 +87,16 @@ def acquisition_detail(request, pk):
 	return render(request, 'records/acquisition_detail.html', context=context)
 
 class AcquisitionEditView(TemplateView):
+	"""
+	入手記録の編集を行うビュー。
+	新規登録と再編集の両方を同じ画面で処理する。
+	"""
 	template_name = 'records/acquisition_edit.html'
 	
 	def get(self, request, pk=None, *args, **kwargs):
 		if pk:
 			is_new_record = False
-			acquisition = get_object_or_404(AcquisitionRecord, pk=pk)
+			acquisition = get_object_or_404(Acquisition, pk=pk)
 			acquisition_form = AcquisitionForm(instance=acquisition)
 			item_formset = AcquisitionItemFormSet(instance=acquisition)
 			cancel_url = reverse('records:acquisition_detail', args=[pk])
@@ -95,7 +127,7 @@ class AcquisitionEditView(TemplateView):
 		"""
 		if pk:
 			is_new_record = False
-			acquisition = get_object_or_404(AcquisitionRecord, pk=pk)
+			acquisition = get_object_or_404(Acquisition, pk=pk)
 			acquisition_form = AcquisitionForm(request.POST, request.FILES, instance=acquisition)
 			item_formset = AcquisitionItemFormSet(request.POST, request.FILES, instance=acquisition)
 			cancel_url = reverse('records:acquisition_detail', args=[pk])
@@ -138,19 +170,54 @@ class AcquisitionEditView(TemplateView):
 		return render(request, self.template_name, context=context)
 
 def acquisition_delete(request, pk):
-	record = get_object_or_404(AcquisitionRecord, pk=pk)
+	"""
+	入手記録の削除を行うAPIエントリ。
+	"""
+	record = get_object_or_404(Acquisition, pk=pk)
 	if request.method == 'POST':
 		record.delete()
 		messages.success(request, f'「{record}」を削除しました。')
 		return redirect(reverse_lazy('records:acquisition_list'))
+	
 	# GET で来たら詳細画面に戻す
 	return redirect(
 		record.get_absolute_url() if hasattr(record, 'get_absolute_url')
 		else reverse_lazy('records:acquisition_detail', args=[pk])
 	)
 
+# レシート読み取りのエンドポイント
+@csrf_exempt
+def receipt_ocr(request):
+	"""
+	レシート画像の解析を行うAPIエントリ。
+	"""
+	if request.method == 'POST' and request.FILES.get('receipt_image'):
+		uploaded_image = request.FILES['receipt_image']
+		
+		try:
+			# Pass the image to your ReceiptReader
+			# Assuming ReceiptReader.read_receipt returns a dictionary with 'isbns' list
+			reader = ReceiptReader(EasyOCREngine())
+			preprocess_types = [
+				# ('crop', { 'size_scale': (1.0, 1.0) }),
+				('greyscale', { }),
+				('unsharp_masking', { 'alpha': 1.6 }),
+			]
+			receipt_data = reader.read_receipt(uploaded_image.read(), preprocess_type=preprocess_types).receipt_data
+			
+			return JsonResponse({ 'success': True, 'receipt': receipt_data })
+		except Exception as e:
+			# Log the error for debugging
+			print(f"Error processing receipt image: {e}")
+			return JsonResponse({ 'success': False, 'message': 'Error processing image.' }, status=500)
+	
+	return JsonResponse({ 'success': False, 'message': 'Invalid request.' }, status=400)
+
 # 書籍一覧画面
 def book_list(request):
+	"""
+	書籍情報の一覧表示を行うビュー。
+	"""
 	# 動的にモデルのフィールドを取得
 	model = Book
 	fields = [f for f in model._meta.fields if f.name not in model.READONLY_FIELDS]
@@ -160,7 +227,7 @@ def book_list(request):
 	field_names = [f.name for f in fields]
 	
 	# 全レコードを取得
-	records = model.objects.all()
+	records = model.objects.all().prefetch_related('authors')
 	
 	context = {
 		'headers': headers,
@@ -169,8 +236,10 @@ def book_list(request):
 	}
 	return render(request, 'records/book_list.html', context)
 
-# 書籍詳細画面
 def book_detail(request, pk):
+	"""
+	書籍情報の詳細表示を行うビュー。
+	"""
 	record = get_object_or_404(Book, pk=pk)
 	authors = record.authors.all()
 	context = {
@@ -181,6 +250,10 @@ def book_detail(request, pk):
 	return render(request, 'records/book_detail.html', context=context)
 
 class BookEditView(TemplateView):
+	"""
+	書籍情報の編集を行うビュー。
+	新規登録と再編集の両方を同じ画面で処理する。
+	"""
 	template_name = 'records/book_edit.html'
 	
 	def get(self, request, pk=None, *args, **kwargs):
@@ -269,14 +342,106 @@ class BookEditView(TemplateView):
 		
 		return render(request, self.template_name, context=context)
 
-# 書籍情報編集画面
-def book_delete(request):
-	context = {
-	}
-	return render(request, 'records/book_edit.html', context=context)
+def book_delete(request, pk):
+	"""
+	書籍情報の削除を行うエントリ。
+	"""
+	record = get_object_or_404(Book, pk=pk)
+	if request.method == 'POST':
+		record.delete()
+		messages.success(request, f'「{record}」を削除しました。')
+		return redirect(reverse_lazy('records:book_list'))
+	
+	# GET で来たら詳細画面に戻す
+	return redirect(
+		record.get_absolute_url() if hasattr(record, 'get_absolute_url')
+		else reverse_lazy('records:book_detail', args=[pk])
+	)
 
 # 統計画面
 def stats(request):
+	"""
+	入手記録および書籍一覧の統計情報を表示するビュー。
+	"""
+	today = timezone.localdate()
+	start_of_this_month = today.replace(day=1)
+	
+	if start_of_this_month.month == 12:
+		next_month_start = start_of_this_month.replace(year=start_of_this_month.year + 1, month=1, day=1)
+	else:
+		next_month_start = start_of_this_month.replace(month=start_of_this_month.month + 1, day=1)
+	end_of_this_month = next_month_start - timedelta(days=1)
+	
+	this_month_acquisitions = Acquisition.objects.filter(
+		acquisition_date__range=(start_of_this_month, end_of_this_month)
+	)
+	this_month_acquired_items = AcquiredItem.objects.filter(
+		acquisition__acquisition_date__range=(start_of_this_month, end_of_this_month)
+	)
+	
+	# 購入記録数
+	total_acquisition_records = Acquisition.objects.count()
+	this_month_total_acquisition_records = this_month_acquisitions.count()
+	
+	# 購入点数の集計
+	purchase_book_count = AcquiredItem.objects.filter(
+		acquisition__acquisition_type='purchase',
+		item_type='book'
+	).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+	this_month_purchase_book_count = this_month_acquired_items.filter(
+		acquisition__acquisition_type='purchase',
+		item_type='book'
+	).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+	
+	# その他入手点数の集計
+	other_acquisition_book_count = AcquiredItem.objects.filter(
+		acquisition__acquisition_type='other',
+		item_type='book'
+	).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+	this_month_other_acquisition_book_count = this_month_acquired_items.filter(
+		acquisition__acquisition_type='other',
+		item_type='book'
+	).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+	
+	# 合計入手点数の集計
+	total_acquired_book_count = purchase_book_count + other_acquisition_book_count
+	this_month_total_acquired_book_count = this_month_purchase_book_count + this_month_other_acquisition_book_count
+	
+	# 購入金額の合計
+	purchase_total_amount = AcquiredItem.objects.filter(
+		item_type='book',
+		price__isnull=False,  # priceがnullでないことを確認
+		quantity__isnull=False  # quantityがnullでないことを確認
+	).aggregate(
+		total_sum=Sum(F('price') * F('quantity'))  # priceとquantityの積を合計
+	)['total_sum'] or 0
+	this_month_purchase_total_amount = this_month_acquired_items.filter(
+		item_type='book',
+		price__isnull=False,  # priceがnullでないことを確認
+		quantity__isnull=False  # quantityがnullでないことを確認
+	).aggregate(
+		total_sum=Sum(F('price') * F('quantity'))  # priceとquantityの積を合計
+	)['total_sum'] or 0
+	
+	# 書籍の登録冊数 (Bookモデルの全レコード数)
+	total_registered_books = Book.objects.count()
+	
+	# 所有済み冊数 (Bookモデルのhas_itemがTrueのレコード数)
+	owned_books_count = Book.objects.filter(has_item=True).count()
+	
 	context = {
+		'total_acquisition_records': total_acquisition_records,
+		'this_month_total_acquisition_records': this_month_total_acquisition_records,
+		'purchase_book_count': purchase_book_count,
+		'this_month_purchase_book_count': this_month_purchase_book_count,
+		'other_acquisition_book_count': other_acquisition_book_count,
+		'this_month_other_acquisition_book_count': this_month_other_acquisition_book_count,
+		'total_acquired_book_count': total_acquired_book_count,
+		'this_month_total_acquired_book_count': this_month_total_acquired_book_count,
+		'purchase_total_amount': purchase_total_amount,
+		'this_month_purchase_total_amount': this_month_purchase_total_amount,
+		'total_registered_books': total_registered_books,
+		'owned_books_count': owned_books_count,
 	}
+	
 	return render(request, 'records/stats.html', context=context)

@@ -1,6 +1,8 @@
 /* static/js/acquisition_form.js */
 
 (() => {
+//	import { parseFlexibleDateTime } from '../utils/dutil.js';
+
 	function validateDatetime(value) {
 		// 日付フォーマットを検証する関数
 		const datetimeReg = /^(?<year>\d{4})\/(?<month>\d{1,2})\/(?<day>\d{1,2})( +(?<hour>\d{1,2})(:(?<minute>\d{1,2})(:(?<second>\d{1,2}))?)?)?$/;

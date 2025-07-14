@@ -12,7 +12,7 @@
 
 <h2>{% if is_new_record %}入手記録の新規作成{% else %}入手記録の編集{% endif %}</h2>
 
-<form method="post">
+<form method="post" enctype="multipart/form-data" onkeydown="return event.key != 'Enter';">
 	{% csrf_token %}
 	{% for hidden in acquisition_form.hidden_fields %}
 		{{ hidden }}
@@ -23,23 +23,35 @@
 		<table class="detail-table">
 			<tbody>
 			{% for field in acquisition_form.visible_fields %}
-			<tr>
-				<th>{{ field.label }}</th>
-				<td>
-					{{ field |add_class:"form-control"}}
-					{% if field.errors %}
-						<ul class="errorlist">
-							{% for error in field.errors %}
-								<li style="color: red;">{{ error }}</li>
-							{% endfor %}
-						</ul>
-					{% endif %}
-				</td>
-			</tr>
+				<tr>
+					<th>{{ field.label }}</th>
+					<td>
+						{{ field | add_class:"form-control"}}
+						{% if field.errors %}
+							<ul class="errorlist">
+								{% for error in field.errors %}
+									<li style="color: red;">{{ error }}</li>
+								{% endfor %}
+							</ul>
+						{% endif %}
+					</td>
+				</tr>
 			{% endfor %}
 
 			</tbody>
 		</table>
+	</div>
+
+	<h3>レシート画像からの自動入力</h3>
+	<input type="file" id="receipt-image-upload" name="receipt_image_upload" accept="image/*">
+	<button type="button" id="upload-receipt-button">画像をアップロードしてOCR処理</button>
+	<div id="ocr-status" style="display: none; margin-top: 10px;">
+		<span id="loading-indicator" style="display: none;">処理中...</span>
+		<span id="ocr-result-message"></span>
+	</div>
+	<div id="ocr-isbns-display" style="margin-top: 10px;">
+		<p>検出されたISBN:</p>
+		<ul id="detected-isbns-list"></ul>
 	</div>
 
 	<div>
@@ -81,5 +93,6 @@
 {% endblock %}
 
 {% block extra_js %}
-	<script src="{% static 'records/acquisition_form.js' %}"></script>
+	<script src="{% static 'records/js/acquisition_form.js' %}"></script>
+	<script src="{% static 'records/js/receipt_ocr.js' %}"></script>
 {% endblock %}

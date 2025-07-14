@@ -159,15 +159,23 @@ class BaseOCREngine(metaclass=ABCMeta):
 		return cv2.cvtColor(image.clip(0, 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
 	
 	def recognize(self,
-			image_path: str, preprocess_type: Union[str | tuple[str] | None] = None
+			image, preprocess_type: Union[str | tuple[str] | None] = None
 	) -> OCRResult:
-		img = cv2.imread(image_path)
-		original = img.copy()
-		img = self.preprocess(img, preprocess_type)  # データの前処理 (処理内容は設定による)
+		"""
 		
-		texts: list[OCRTextBlock] = self.recognize_text(img)  # 文字の読み取り
+		Args:
+			image (numpy.ndarray):
+			preprocess_type:
+
+		Returns:
+
+		"""
+		original = image.copy()
+		image = self.preprocess(image, preprocess_type)  # データの前処理 (処理内容は設定による)
 		
-		return OCRResult(self, original, img, texts)
+		texts: list[OCRTextBlock] = self.recognize_text(image)  # 文字の読み取り
+		
+		return OCRResult(self, original, image, texts)
 
 OCREngine = BaseOCREngine
 

@@ -1,9 +1,12 @@
+"""
+acquisition_form.py
+"""
 from django import forms
 from django.forms import inlineformset_factory
 from django.core.exceptions import ValidationError
 
 from .form_util import ImageWidget
-from .models import AcquisitionRecord, AcquiredItem, validate_datetime
+from .models import Acquisition, AcquiredItem, validate_datetime
 
 class AcquisitionForm(forms.ModelForm):
 	class Meta:
@@ -23,7 +26,7 @@ class AcquisitionForm(forms.ModelForm):
 			'receipt_image': { 'label': 'レシート画像' },
 		}
 		
-		model = AcquisitionRecord
+		model = Acquisition
 		fields = list(FieldMap.keys())
 		labels = { name: v['label'] for name, v in FieldMap.items() if 'label' in v }
 		widgets = { name: v['widget'] for name, v in FieldMap.items() if 'widget' in v }
@@ -58,9 +61,10 @@ class AcquiredItemForm(forms.ModelForm):
 		widgets = { name: v['widget'] for name, v in ACQUIRED_ITEM_FIELD_MAP.items() if 'widget' in v }
 
 AcquisitionItemFormSet = inlineformset_factory(
-	parent_model=AcquisitionRecord,
+	parent_model=Acquisition,
 	model=AcquiredItem,
 	form=AcquiredItemForm,
 	extra=10,  # 最初から表示される行数
 	can_delete=True,  # 行の削除を許可するか
+	can_order=True,
 )
