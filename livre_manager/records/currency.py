@@ -1,10 +1,13 @@
+"""
+records/currency.py
+"""
 NULL_CURRENCY_CODE = ''
 JPY = 'JPY'
 USD = 'USD'
 
 CURRENCY_INFO = {
 	'JPY': { 'symbol': '¥', 'label': '円' },
-	'USD': { 'symbol': '$', 'label': 'ドル(USD)' },
+	'USD': { 'symbol': '$', 'label': '米ドル' },
 	'EUR': { 'symbol': '€', 'label': 'ユーロ' },
 	'GBP': { 'symbol': '£', 'label': 'ポンド' },
 }
