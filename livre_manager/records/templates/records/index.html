@@ -50,7 +50,7 @@
 			<div class="inline-flow">
 				<div class="text-item">
 					{{ record.total_quantity }}点
-					{% inline_price_format record.total record.subtotal record.tax record.currency_code as price_str %}
+					{% format_price_and_tax record.total record.subtotal record.tax record.currency_code as price_str %}
 					{{ price_str | default:"&lt;金額未設定&gt;" }}
 				</div>
 			</div>
@@ -71,7 +71,7 @@
 	{% endfor %}
 </div>
 
-<h3>発売済み（{{ recent_books | length }}件）</h3>
+<h3>新刊（{{ recent_books | length }}件）</h3>
 
 <div class="item-container boxed">
 	{% for record in recent_books %}
@@ -111,7 +111,7 @@
 					</div>
 					<div class="inline-flow">
 						<div class="text-item">
-							<span class="label">定価: </span>{{ record.price | currency_format:record.currency_code | default:"-" }}
+							<span class="label">定価: </span>{{ record.price | format_currency:record.currency_code | default:"-" }}
 						</div>
 					</div>
 					<div class="inline-flow">
@@ -127,7 +127,7 @@
 	{% endfor %}
 </div>
 
-<h3>近日発売予定（{{ upcoming_books | length }}件）</h3>
+<h3>近日発売（{{ upcoming_books | length }}件）</h3>
 
 <div class="item-container boxed">
 	{% for record in upcoming_books %}
@@ -167,7 +167,7 @@
 					</div>
 					<div class="inline-flow">
 						<div class="text-item">
-							<span class="label">定価: </span>{{ record.price | currency_format:record.currency_code | default:"-" }}
+							<span class="label">定価: </span>{{ record.price | format_currency:record.currency_code | default:"-" }}
 						</div>
 					</div>
 					<div class="inline-flow">

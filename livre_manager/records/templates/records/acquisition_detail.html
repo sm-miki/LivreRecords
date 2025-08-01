@@ -65,19 +65,19 @@
 			</tr>
 			<tr>
 				<th>合計支払金額</th>
-				<td>{{ record.total |currency_format:record.currency_code |default:"-" }}</td>
+				<td>{{ record.total |format_currency:record.currency_code |default:"-" }}</td>
 			</tr>
 			<tr>
 				<th>小計（税抜）</th>
-				<td>{{ record.subtotal |currency_format:record.currency_code |default:"-" }}</td>
+				<td>{{ record.subtotal |format_currency:record.currency_code |default:"-" }}</td>
 			</tr>
 			<tr>
 				<th>税額</th>
-				<td>{{ record.tax |currency_format:record.currency_code |default:"-" }}</td>
+				<td>{{ record.tax |format_currency:record.currency_code |default:"-" }}</td>
 			</tr>
 			<tr>
 				<th>送料等</th>
-				<td>{{ record.extra_fee |currency_format:record.currency_code |default:"-" }}</td>
+				<td>{{ record.extra_fee |format_currency:record.currency_code |default:"-" }}</td>
 			</tr>
 			<tr>
 				<th>支払方法</th>
@@ -137,17 +137,17 @@
 
 			<div class="text-item">
 				{% if item.price %}
-					税込{{ item.price | currency_format:record.currency_code }}{% comment %}
+					税込{{ item.price | format_currency:record.currency_code }}{% comment %}
 					{% endcomment %}{% if item.net_price or item.tax %}（{% endif %}{% comment %}
-					{% endcomment %}{% if item.net_price %}税抜{{ item.net_price | currency_format:record.currency_code }}{% endif %}{% comment %}
+					{% endcomment %}{% if item.net_price %}税抜{{ item.net_price | format_currency:record.currency_code }}{% endif %}{% comment %}
 					{% endcomment %}{% if item.net_price and item.tax %} + {% endif %}{% comment %}
-					{% endcomment %}{% if item.tax %}税{{ item.tax | currency_format:record.currency_code }}{% endif %}{% if item.net_price or item.tax %}）{% endif %}
+					{% endcomment %}{% if item.tax %}税{{ item.tax | format_currency:record.currency_code }}{% endif %}{% if item.net_price or item.tax %}）{% endif %}
 				{% elif not item.net_price and not item.tax %}
 					&lt;金額未登録&gt;
 				{% else %}
-					税抜{{ item.net_price | currency_format:record.currency_code }}{% comment %}
+					税抜{{ item.net_price | format_currency:record.currency_code }}{% comment %}
 					{% endcomment %}{% if item.net_price and item.tax %} + {% endif %}{% comment %}
-					{% endcomment %}{% if item.tax %}税{{ item.tax | currency_format:record.currency_code }}{% endif %}
+					{% endcomment %}{% if item.tax %}税{{ item.tax | format_currency:record.currency_code }}{% endif %}
 				{% endif %}
 			</div>
 		</div>

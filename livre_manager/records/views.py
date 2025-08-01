@@ -1,9 +1,8 @@
 """
 records/views.py
 """
-import json
+from typing import Union
 from django.db import transaction
-from django.db.models.functions import TruncMonth
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse, reverse_lazy
 from django.contrib import messages
@@ -14,6 +13,7 @@ from django.db.models import Sum, Q, F
 from datetime import datetime, date, timedelta  # datetime, date, timedelta をインポート
 from django.utils import timezone  # タイムゾーン対応のためにtimezoneをインポート
 
+from .currency import CURRENCY_INFO
 from .receipt_reader import ReceiptReader
 from .receipt_reader.ocr_engine import EasyOCREngine
 
@@ -160,7 +160,7 @@ class AcquisitionEditView(TemplateView):
 			context['PostSuccess'] = True
 			
 			# 成功時のリダイレクトも検討する。例えば、新しい詳細ページや一覧ページへ
-			return redirect(reverse_lazy('records:acquisition_detail', args=[new_acquisition.pk]))  # acquisition_success_pageは例
+			return redirect(reverse_lazy('records:acquisition_detail', args=[new_acquisition.pk]))
 		else:
 			# フォームが有効ではない場合、
 			# エラーメッセージを表示するために現在のフォームをcontextに含める
@@ -236,11 +236,21 @@ def book_list(request):
 	}
 	return render(request, 'records/book_list.html', context)
 
-def book_detail(request, pk):
+def book_detail(request, pk: str, id_type=None):
 	"""
 	書籍情報の詳細表示を行うビュー。
 	"""
-	record = get_object_or_404(Book, pk=pk)
+	if id_type:
+		match id_type.lower():
+			case 'isbn':
+				record = get_object_or_404(Book, isbn=pk)
+			case 'jan':
+				record = get_object_or_404(Book, jan=pk)
+			case 'asin':
+				record = get_object_or_404(Book, asin=pk)
+	else:
+		record = get_object_or_404(Book, pk=pk)
+	
 	authors = record.authors.all()
 	context = {
 		'record': record,
@@ -256,7 +266,7 @@ class BookEditView(TemplateView):
 	"""
 	template_name = 'records/book_edit.html'
 	
-	def get(self, request, pk=None, *args, **kwargs):
+	def get(self, request, pk: Union[str, None] = None, *args, **kwargs):
 		if pk:
 			# 既存レコードの再編集
 			is_new_record = False
@@ -277,6 +287,12 @@ class BookEditView(TemplateView):
 			
 			book_form = BookForm(initial=initial)
 			author_formset = AuthorFormSet()
+			# book = Book()
+			# book_form = BookForm(initial=initial, instance=book)
+			# author_formset = AuthorFormSet(
+			# 	instance=book,
+			# 	queryset=BookAuthorRelation.objects.none()
+			# )
 			cancel_url = reverse('records:book_list')
 		
 		return render(request, self.template_name, context={
@@ -299,12 +315,14 @@ class BookEditView(TemplateView):
 
 		"""
 		if pk:
+			# 再編集の場合
 			is_new_record = False
 			book = get_object_or_404(Book, pk=pk)
 			book_form = BookForm(request.POST, request.FILES, instance=book)
 			author_formset = AuthorFormSet(request.POST, request.FILES, instance=book)
 			cancel_url = reverse('records:book_detail', args=[pk])
 		else:
+			# 新規作成の場合
 			is_new_record = True
 			book_form = BookForm(request.POST, request.FILES)
 			author_formset = AuthorFormSet(request.POST, request.FILES)
@@ -372,6 +390,10 @@ def stats(request):
 		next_month_start = start_of_this_month.replace(month=start_of_this_month.month + 1, day=1)
 	end_of_this_month = next_month_start - timedelta(days=1)
 	
+	"""
+	入手記録に基づく集計
+	"""
+	
 	this_month_acquisitions = Acquisition.objects.filter(
 		acquisition_date__range=(start_of_this_month, end_of_this_month)
 	)
@@ -407,21 +429,70 @@ def stats(request):
 	total_acquired_book_count = purchase_book_count + other_acquisition_book_count
 	this_month_total_acquired_book_count = this_month_purchase_book_count + this_month_other_acquisition_book_count
 	
-	# 購入金額の合計
-	purchase_total_amount = AcquiredItem.objects.filter(
-		item_type='book',
-		price__isnull=False,  # priceがnullでないことを確認
-		quantity__isnull=False  # quantityがnullでないことを確認
-	).aggregate(
-		total_sum=Sum(F('price') * F('quantity'))  # priceとquantityの積を合計
-	)['total_sum'] or 0
-	this_month_purchase_total_amount = this_month_acquired_items.filter(
-		item_type='book',
-		price__isnull=False,  # priceがnullでないことを確認
-		quantity__isnull=False  # quantityがnullでないことを確認
-	).aggregate(
-		total_sum=Sum(F('price') * F('quantity'))  # priceとquantityの積を合計
-	)['total_sum'] or 0
+	"""
+	通貨別の集計
+	"""
+	currency_stats = { }
+	for code, info in CURRENCY_INFO.items():
+		# 全期間の購入金額
+		purchased_books = AcquiredItem.objects.filter(
+			acquisition__currency_code=code,  # 通貨でフィルタリング
+			item_type='book',
+			price__isnull=False,
+			quantity__isnull=False
+		)
+		this_month_purchased_books = this_month_acquired_items.filter(
+			acquisition__currency_code=code,  # 通貨でフィルタリング
+			item_type='book',
+			price__isnull=False,
+			quantity__isnull=False
+		)
+		
+		# 購入冊数（平均価格算出用）
+		total_book_count = purchased_books.aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+		if code == 'JPY' or total_book_count > 0:
+			this_month_book_count = this_month_purchased_books.aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
+			
+			# 購入金額
+			total_amount = purchased_books.aggregate(total_sum=Sum(F('price') * F('quantity')))['total_sum'] or 0
+			this_month_total_amount = this_month_purchased_books.aggregate(total_sum=Sum(F('price') * F('quantity')))['total_sum'] or 0
+			
+			# 平均価格
+			average_price = total_amount / total_book_count
+			this_month_average_price = this_month_total_amount / this_month_book_count if this_month_book_count > 0 else 0
+			
+			currency_stats[code] = {
+				'label': info['label'],
+				'symbol': info['symbol'],
+				'total_amount': total_amount,
+				'this_month_total_amount': this_month_total_amount,
+				'average_price': average_price,
+				'this_month_average_price': this_month_average_price,
+			}
+	
+	# # 購入金額の合計
+	# purchase_total_amount = AcquiredItem.objects.filter(
+	# 	item_type='book',
+	# 	price__isnull=False,  # priceがnullでないことを確認
+	# 	quantity__isnull=False  # quantityがnullでないことを確認
+	# ).aggregate(
+	# 	total_sum=Sum(F('price') * F('quantity'))  # priceとquantityの積を合計
+	# )['total_sum'] or 0
+	# this_month_purchase_total_amount = this_month_acquired_items.filter(
+	# 	item_type='book',
+	# 	price__isnull=False,  # priceがnullでないことを確認
+	# 	quantity__isnull=False  # quantityがnullでないことを確認
+	# ).aggregate(
+	# 	total_sum=Sum(F('price') * F('quantity'))  # priceとquantityの積を合計
+	# )['total_sum'] or 0
+	#
+	# # 価格平均
+	# average_price = purchase_total_amount / purchase_book_count if purchase_book_count > 0 else 0
+	# this_month_average_price = this_month_purchase_total_amount / this_month_purchase_book_count if this_month_purchase_book_count > 0 else 0
+	
+	"""
+	書籍一覧の集計
+	"""
 	
 	# 書籍の登録冊数 (Bookモデルの全レコード数)
 	total_registered_books = Book.objects.count()
@@ -438,10 +509,16 @@ def stats(request):
 		'this_month_other_acquisition_book_count': this_month_other_acquisition_book_count,
 		'total_acquired_book_count': total_acquired_book_count,
 		'this_month_total_acquired_book_count': this_month_total_acquired_book_count,
-		'purchase_total_amount': purchase_total_amount,
-		'this_month_purchase_total_amount': this_month_purchase_total_amount,
+		'currency_stats': currency_stats,
 		'total_registered_books': total_registered_books,
 		'owned_books_count': owned_books_count,
 	}
 	
-	return render(request, 'records/stats.html', context=context)
+	return render(request, f'records/stats.html', context=context)
+
+def page_not_found(request, exception):
+	"""
+	カスタム404エラーページを表示するビュー。
+	"""
+	
+	return render(request, 'records/404.html', status=404)

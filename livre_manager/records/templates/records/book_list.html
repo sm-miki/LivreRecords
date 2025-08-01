@@ -27,7 +27,7 @@
 {% for record in records %}
 	<div class="item-card">
 		<div class="horizontal-panes">
-			<a class="pane thumb-cover-frame" href="{% url 'records:book_detail' record.id %}">
+			<a class="pane thumb-cover-frame" href="{{ record.detail_page_readable_url }}">
 				{# カバー画像 #}
 				{% if record.cover_image %}
 				 <img src="{{ record.cover_image.url }}" alt="書籍カバー画像">
@@ -38,7 +38,7 @@
 			<div class="pane">
 				<div class="inline-flow">
 					<div class=".text-item">
-						<a href="{% url 'records:book_detail' record.id %}">
+						<a href="{{ record.detail_page_readable_url }}">
 							{{ record.title | default:"&lt;書名未登録&gt;" }}{% if record.series %}（{{ record.series | default:"-" }}）{% endif %}
 						</a>
 					</div>
@@ -61,7 +61,7 @@
 				</div>
 				<div class="inline-flow">
 					<div class="text-item">
-						<span class="label">定価: </span>{{ record.price | currency_format:record.currency_code | default:"-" }}
+						<span class="label">定価: </span>{{ record.price | format_currency:record.currency_code | default:"-" }}
 					</div>
 				</div>
 				<div class="inline-flow">

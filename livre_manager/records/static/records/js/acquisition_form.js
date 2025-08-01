@@ -1,29 +1,10 @@
 /* static/js/acquisition_form.js */
 
+						// 精度エラー
+						// 精度エラー
+import { normalizeDateTime, InvalidFormatError, InvalidValueError, PrecisionError, InvalidTimezoneError } from './flex-datetime/index.js';
+
 (() => {
-//	import { parseFlexibleDateTime } from '../utils/dutil.js';
-
-	function validateDatetime(value) {
-		// 日付フォーマットを検証する関数
-		const datetimeReg = /^(?<year>\d{4})\/(?<month>\d{1,2})\/(?<day>\d{1,2})( +(?<hour>\d{1,2})(:(?<minute>\d{1,2})(:(?<second>\d{1,2}))?)?)?$/;
-		let result = datetimeReg.exec(value);
-		if (!result) {
-			return false;
-		}
-		// 実在する日付かどうかもチェックしたい場合は以下のように Date オブジェクトを使う
-		const parts = value.split('/');
-		const year = parseInt(result.groups.year, 10);
-		const month = result.groups.month ? parseInt(result.groups.month, 10) : 1;
-		const day = result.groups.day ? parseInt(result.groups.day, 10) : 1;
-		const hours = result.groups.hours ? parseInt(result.groups.hours, 10) : 0;
-		const minutes = result.groups.minutes ? parseInt(result.groups.minutes, 10) : 0;
-		const seconds = result.groups.seconds ? parseInt(result.groups.seconds, 10) : 0;
-		const dt = new Date(year, month, day, hours, minutes, seconds);
-		// 生成した日付オブジェクトを元の日付文字列と比較して「有効な日付かどうか」を判定
-		return dt.getFullYear() === year && dt.getMonth() === month && dt.getDate() === day
-			&& dt.getHours() === hours && dt.getMinutes() === minutes && dt.getSeconds() === seconds;
-	}
-
 	function showWarning(field, message) {
 		// 入力欄に対するエラーメッセージを表示する。
 		var warningBox = field.parentNode.querySelector(':scope > .warning-message');
@@ -42,7 +23,7 @@
 		}
 	}
 
-	window.addEventListener('DOMContentLoaded', function() {
+	window.addEventListener('DOMContentLoaded', function () {
 		// 入手日時の入力欄とエラー表示用要素、Submit ボタンを取得
 		const form = document.querySelector('form');
 		const acquisitionDateInput = document.getElementById('id_acquisition_date_str');
@@ -64,7 +45,7 @@
 		});
 
 		// ページ離脱時の確認ダイアログ
-		window.addEventListener('beforeunload', function(e) {
+		window.addEventListener('beforeunload', function (e) {
 			if (formModified) {
 				// ブラウザのデフォルトの確認メッセージを表示
 				e.preventDefault();
@@ -79,16 +60,43 @@
 		const errors = new Map();		// id: [msg, focusBody]
 		let validations = {};
 
-		// 入力時（input）／フォーカスアウト時（blur）にバリデート
+		// 入力時（input）／フォーカスアウト時（blur）に検証
 		function validateAcquisitionDate() {
 			const val = acquisitionDateInput.value.trim();
-			if (val !== '' && !validateDatetime(val)) {
+			let msg = null;
+			let normalizedDate = null;
+
+			if (val !== '') {
+				try {
+					normalizedDate = normalizeDateTime(val, { requiredPrecision: 'day' });
+				} catch (e) {
+					if (e instanceof InvalidFormatError) {
+						// フォーマットエラー
+						msg = '「YYYY/MM/DD hh:mm:ss」の形式で入力してください。（時、分、秒は省略可能）';
+					} else if (e instanceof InvalidValueError) {
+						// 値エラー
+						msg = '存在しない日時です。';
+					} else if (e instanceof PrecisionError) {
+						// 精度エラー
+						msg = '少なくとも年月日を入力してください。';
+					} else if (e instanceof InvalidTimezoneError) {
+						// タイムゾーンエラー
+						msg = '不明なタイムゾーンです。';
+					} else {
+						// その他のエラー
+						throw e; // 予期しないエラーは再スロー
+					}
+				}
+			}
+
+			if (msg !== null) {
 				// 不正データ
-				msg = '不正な日時です。「YYYY/MM/DD hh:mm:ss」の形式で入力してください。（時刻は省略可能）';
-				showWarning(acquisitionDateInput, msg);
+				showWarning(acquisitionDateInput, 'エラー: ' + msg);
 				errors.set('acquisitionDate', [msg, acquisitionDateInput]);
 			} else {
 				// 正常
+				if (normalizedDate)
+					acquisitionDateInput.value = normalizedDate;
 				showWarning(acquisitionDateInput, '');
 				errors.delete('acquisitionDate');
 			}
@@ -107,7 +115,7 @@
 			if (!isNaN(total) && !isNaN(subtotal) && !isNaN(tax)
 				&& total != subtotal + tax + (extraFee || 0)) {
 				// 不正データ
-				msg = '(支払金額)が(税抜合計 + 税額 + 送料等)と一致しません。';
+				const msg = '支払金額が(税抜合計 + 税額 + 送料等)と一致しません。';
 				showWarning(totalInput, msg);
 				errors.set('tax', [msg, totalInput]);
 			} else {
@@ -136,7 +144,7 @@
 		}
 
 		// フォーム送信時にチェック
-		form.addEventListener('submit', function(e) {
+		form.addEventListener('submit', function (e) {
 			// 送信前に最終チェック
 			if (validate() /* || 他のエラー */) {
 				// エラーが発生したため送信キャンセル
@@ -146,8 +154,8 @@
 				[...errors][0][1][1].focus();
 
 				// メッセージボックスを表示
-//				errorSummary = [...errors].map(([k, [msg, focusBody]]) => msg).join('\n');
-//				alert(errorSummary);
+				//				errorSummary = [...errors].map(([k, [msg, focusBody]]) => msg).join('\n');
+				//				alert(errorSummary);
 			} else {
 				// エラーがない場合、フォームが送信されるので formModified を false に設定
 				formModified = false;

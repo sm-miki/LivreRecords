@@ -1,3 +1,4 @@
+<!-- records/stats.html -->
 {% extends 'records/base.html' %}
 {% load static %}
 {% load record_extras %}
@@ -13,56 +14,79 @@
 	統計
 </div>
 
-<h3>
-	入手記録
-</h3>
+<div class="tab-nav">
+	<button id="defaultOpen" class="tab-button" data-tab="acquisitionStats" onclick="openTab(event, 'acquisitionStats')">入手記録</button>
+	<button class="tab-button" data-tab="bookStats" onclick="openTab(event, 'bookStats')">書籍</button>
+</div>
+<div id="acquisitionStats" class="tab-content">
 
-<table class="detail-table">
-	<thead>
-		<th></th>
-		<th>全期間</th>
-		<th>今月</th>
-	</thead>
-	<tr>
-		<th>購入記録数</th>
-		<td>{{ total_acquisition_records }}</td>
-		<td>{{ this_month_total_acquisition_records }}</td>
-	</tr>
-	<tr>
-		<th>購入点数</th>
-		<td>{{ purchase_book_count }}</td>
-		<td>{{ this_month_purchase_book_count }}</td>
-	</tr>
-	<tr>
-		<th>その他入手点数</th>
-		<td>{{ other_acquisition_book_count }}</td>
-		<td>{{ this_month_other_acquisition_book_count }}</td>
-	</tr>
-	<tr>
-		<th>合計入手点数</th>
-		<td>{{ total_acquired_book_count }}</td>
-		<td>{{ this_month_total_acquired_book_count }}</td>
-	</tr>
-	<tr>
-		<th>購入金額</th>
-		<td>{{ purchase_total_amount }}</td>
-		<td>{{ this_month_purchase_total_amount }}</td>
-	</tr>
-</table>
+	<h3>
+		入手記録
+	</h3>
 
-<h3>
-	書籍
-</h3>
+	<table class="detail-table">
+		<thead>
+			<th></th>
+			<th>全期間</th>
+			<th>今月</th>
+		</thead>
+		<tr>
+			<th>購入記録数</th>
+			<td>{{ total_acquisition_records }}</td>
+			<td>{{ this_month_total_acquisition_records }}</td>
+		</tr>
+		<tr>
+			<th>購入点数</th>
+			<td>{{ purchase_book_count }}</td>
+			<td>{{ this_month_purchase_book_count }}</td>
+		</tr>
+		<tr>
+			<th>その他入手点数</th>
+			<td>{{ other_acquisition_book_count }}</td>
+			<td>{{ this_month_other_acquisition_book_count }}</td>
+		</tr>
+		<tr>
+			<th>合計入手点数</th>
+			<td>{{ total_acquired_book_count }}</td>
+			<td>{{ this_month_total_acquired_book_count }}</td>
+		</tr>
+	</table>
 
-<table class="detail-table">
-	<tr>
-		<th>登録冊数</th>
-		<td>{{ total_registered_books }}</td>
-	</tr>
-	<tr>
-		<th>所有済み冊数</th>
-		<td>{{ owned_books_count }}</td>
-	</tr>
-</table>
+	{% for code, stats in currency_stats.items %}
+		<h4>購入金額（{{ stats.label }}）</h4>
+		<table class="detail-table">
+			<tr>
+				<th>購入金額</th>
+				<td>{{ stats.total_amount | format_currency:code }}</td>
+				<td>{{ stats.this_month_total_amount | format_currency:code }}</td>
+			</tr>
+			<tr>
+				<th>平均価格</th>
+				<td>{{ stats.average_price | format_currency:code }}</td>
+				<td>{{ stats.this_month_average_price | format_currency:code }}</td>
+			</tr>
+		</table>
+	{% endfor %}
+</div>
+<div id="bookStats" class="tab-content">
+	<h3>
+		書籍
+	</h3>
 
+	<table class="detail-table">
+		<tr>
+			<th>登録冊数</th>
+			<td>{{ total_registered_books }}</td>
+		</tr>
+		<tr>
+			<th>所有済み冊数</th>
+			<td>{{ owned_books_count }}</td>
+		</tr>
+	</table>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+	<script src="{% static 'records/js/stats.js' %}"></script>
 {% endblock %}

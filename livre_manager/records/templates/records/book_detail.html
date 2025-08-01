@@ -65,7 +65,7 @@
 
 		<div class="inline-flow">
 			<div class="text-item">
-				<span class="label">定価: </span>{{ record.price | currency_format:record.currency_code | default:"価格未登録" }}
+				<span class="label">定価: </span>{{ record.price | format_currency:record.currency_code | default:"価格未登録" }}
 			</div>
 		</div>
 
@@ -80,7 +80,7 @@
 		{% if record.jan %}
 		<div class="inline-flow">
 			<div class="text-item">
-				<span class="label">JAN: </span>{{ record.publisher }}
+				<span class="label">JAN: </span>{{ record.jan }}
 			</div>
 		</div>
 		{% endif %}
@@ -88,7 +88,7 @@
 		{% if record.asin %}
 		<div class="inline-flow">
 			<div class="text-item">
-				<span class="label">ASIN: </span>{{ record.publisher }}
+				<span class="label">ASIN: </span>{{ record.asin }}
 			</div>
 		</div>
 		{% endif %}

@@ -25,7 +25,13 @@
 			<tr>
 				<th>{{ field.label }}</th>
 				<td>
-					{{ field | add_class:"form-control"}}
+					{# エラーがある場合に invalid-input クラスを追加 #}
+					{% if field.errors %}
+						{{ field | add_class:"form-control invalid-input" }}
+					{% else %}
+						{{ field | add_class:"form-control" }}
+					{% endif %}
+
 					{% if field.errors %}
 						<ul class="errorlist">
 							{% for error in field.errors %}
@@ -81,5 +87,6 @@
 {% endblock %}
 
 {% block extra_js %}
-	<script src="{% static 'records/js/book_form.js' %}"></script>
+	<script type="module" src="{% static 'records/js/flex-datetime/index.js' %}"></script>
+	<script type="module" src="{% static 'records/js/book_form.js' %}"></script>
 {% endblock %}

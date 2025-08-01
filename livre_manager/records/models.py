@@ -1,15 +1,18 @@
 """
 records/models.py
 """
+import uuid
 from datetime import datetime
 from django.db import models
 from django.db.models.signals import post_save, post_delete
+from django.urls import reverse
 from django.dispatch import receiver
 import dateutil.parser
 
+from .unique_id_field import NanoIDField
 from .currency import CURRENCY_CODE_CHOICES, JPY
-
-# Create your models here.
+from .flex_datetime import FlexDatetime
+from .flex_datetime.error import FlexDatetimeError
 
 default_date = datetime(1, 1, 1)
 
@@ -20,6 +23,9 @@ class Acquisition(models.Model):
 	"""
 	入手記録テーブルのフィールドを定義する。
 	"""
+	
+	# NanoIDキー
+	id = NanoIDField(primary_key=True, help_text="レコードID")
 	
 	# 入手タイプ
 	ACQUISITION_TYPE_CHOICES = {
@@ -171,10 +177,15 @@ class Acquisition(models.Model):
 		return sum(item.quantity for item in self.items.all())
 	
 	def clean(self):
+		# 入手日時文字列の検証と正規化
 		if self.acquisition_date_str:
 			try:
-				self.acquisition_date = validate_datetime(self.acquisition_date_str)
-			except ValueError:
+				dt = FlexDatetime.parse(self.acquisition_date_str, required_precision='day')
+				try:
+					self.acquisition_date_str = dt.normalize(default_tz='JST')
+				except FlexDatetimeError:
+					pass
+			except FlexDatetimeError:
 				self.acquisition_date = None
 				raise
 	
@@ -191,7 +202,8 @@ class AcquiredItem(models.Model):
 	入手記録テーブルのフィールドを定義する。
 	"""
 	acquisition = models.ForeignKey(
-		Acquisition, on_delete=models.CASCADE, related_name='items'
+		Acquisition, on_delete=models.CASCADE, related_name='items',
+		null=False, blank=False,
 	)
 	order = models.PositiveIntegerField(default=0, help_text="Lower numbers appear first")
 	
@@ -240,6 +252,8 @@ class AcquiredItem(models.Model):
 		return self.ITEM_TYPE_CHOICES[self.item_type]
 
 class Book(models.Model):
+	id = NanoIDField(primary_key=True, help_text="レコードID")
+	
 	# タイトル
 	title = models.TextField()
 	# シリーズ・レーベル名
@@ -276,6 +290,21 @@ class Book(models.Model):
 		'created_at', 'updated_at',
 	)
 	
+	@property
+	def detail_page_readable_url(self):
+		"""
+		書籍の詳細ページへのURLを人間が読みやすい形式で返す。
+		優先順位はISBN、ASIN、JAN、id。
+		"""
+		if self.isbn:
+			return reverse('records:book_detail_by_isbn', kwargs={ 'pk': self.isbn })
+		elif self.asin:
+			return reverse('records:book_detail_by_asin', kwargs={ 'pk': self.asin })
+		elif self.jan:
+			return reverse('records:book_detail_by_jan', kwargs={ 'pk': self.jan })
+		else:
+			return reverse('records:book_detail', kwargs={ 'pk': self.id })
+	
 	def __str__(self):
 		return f"{self.isbn} {self.title}"
 	
@@ -288,16 +317,22 @@ class Book(models.Model):
 		if self.has_item is None:
 			self.has_item = False
 		
+		# 入手日時文字列の検証と正規化
 		if self.publication_date_str:
 			try:
-				self.publication_date = validate_datetime(self.publication_date_str)
-			except ValueError:
+				dt = FlexDatetime.parse_date(self.publication_date_str, required_precision='year')
+				try:
+					self.publication_date_str = dt.normalize(default_tz='JST')
+				except FlexDatetimeError:
+					pass
+			except FlexDatetimeError:
 				self.publication_date = None
 				raise
 
 class BookAuthorRelation(models.Model):
 	book_record = models.ForeignKey(
-		Book, on_delete=models.CASCADE, related_name='authors'
+		Book, on_delete=models.CASCADE, related_name='authors',
+		null=False, blank=False,
 	)
 	
 	# 対応するBook内での記載順

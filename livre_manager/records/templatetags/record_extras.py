@@ -29,7 +29,7 @@ def format_decimal(value):
 	return s
 
 @register.filter
-def currency_format(amount, currency_code):
+def format_currency(amount, currency_code):
 	if amount is None:
 		return None
 	
@@ -37,22 +37,22 @@ def currency_format(amount, currency_code):
 	return f"{symbol}{format_decimal(amount)}"
 
 @register.simple_tag
-def inline_price_format(price, net_price, tax, currency_code) -> str:
+def format_price_and_tax(price, net_price, tax, currency_code) -> str:
 	s = ""
 	if net_price is not None:
 		if tax is not None:
-			s = f"税抜 {currency_format(net_price, currency_code)} + 税 {currency_format(tax, currency_code)}"
+			s = f"税抜 {format_currency(net_price, currency_code)} + 税 {format_currency(tax, currency_code)}"
 		else:
-			s = f"税 {currency_format(tax, currency_code)}"
+			s = f"税 {format_currency(tax, currency_code)}"
 	elif tax is not None:
-		s = f"税 {currency_format(tax, currency_code)}"
+		s = f"税 {format_currency(tax, currency_code)}"
 	
 	if price is None:
 		return s
 	elif s:
-		return f"税込 {currency_format(price, currency_code)} ({s})"
+		return f"税込 {format_currency(price, currency_code)} ({s})"
 	else:
-		return f"税込 {currency_format(price, currency_code)}"
+		return f"税込 {format_currency(price, currency_code)}"
 
 # @register.simple_tag
 # def book_detail_url(isbn):

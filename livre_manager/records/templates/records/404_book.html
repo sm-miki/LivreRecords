@@ -1,0 +1,16 @@
+{% extends 'records/base.html' %}
+
+{% block title %}ページが見つかりません{% endblock %}
+
+{% block breadcrumbs %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+	<h2 class="mt-4">ページが見つかりません (404 Not Found)</h2>
+	<hr>
+	<p>お探しの書籍記録ページは見つかりませんでした。</p>
+	<p>URLをご確認いただくか、下記のボタンからトップページにお戻りください。</p>
+	<a href="{% url 'records:index' %}" class="btn btn-primary">トップページに戻る</a>
+</div>
+{% endblock %}

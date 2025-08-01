@@ -1,31 +1,14 @@
 /* static/js/book_form.js */
 
+import { normalizeDate, InvalidFormatError, InvalidValueError, PrecisionError, InvalidTimezoneError } from './flex-datetime/index.js';
+
 (() => {
-	function validateDatetime(value) {
-		// 日付フォーマットを検証する関数
-		const datetimeReg = /^(?<year>\d{4})\/(?<month>\d{1,2})\/(?<day>\d{1,2})( +(?<hour>\d{1,2})(:(?<minute>\d{1,2})(:(?<second>\d{1,2}))?)?)?$/;
-		let result = datetimeReg.exec(value);
-		if (!result) {
-			return false;
-		}
-		// 実在する日付かどうかもチェックしたい場合は以下のように Date オブジェクトを使う
-		const parts = value.split('/');
-		const year = parseInt(result.groups.year, 10);
-		const month = result.groups.month ? parseInt(result.groups.month, 10) : 1;
-		const day = result.groups.day ? parseInt(result.groups.day, 10) : 1;
-		const hours = result.groups.hours ? parseInt(result.groups.hours, 10) : 0;
-		const minutes = result.groups.minutes ? parseInt(result.groups.minutes, 10) : 0;
-		const seconds = result.groups.seconds ? parseInt(result.groups.seconds, 10) : 0;
-		const dt = new Date(year, month, day, hours, minutes, seconds);
-		// 生成した日付オブジェクトを元の日付文字列と比較して「有効な日付かどうか」を判定
-		return dt.getFullYear() === year && dt.getMonth() === month && dt.getDate() === day
-			&& dt.getHours() === hours && dt.getMinutes() === minutes && dt.getSeconds() === seconds;
-	}
 
 	function showWarning(field, message) {
 		// 入力欄に対するエラーメッセージを表示する。
-		var warningBox = field.parentNode.querySelector(':scope > .warning-message');
+		let warningBox = field.parentNode.querySelector(':scope > .warning-message');
 		if (message) {
+			field.classList.add('invalid-input'); // エラークラスを追加
 			if (!warningBox) {
 				warningBox = document.createElement("div");
 				warningBox.style.color = "red";
@@ -35,8 +18,11 @@
 
 			warningBox.textContent = message;
 			warningBox.style.display = 'block';
-		} else if (warningBox) {
-			warningBox.style.display = 'none';
+		} else {
+			field.classList.remove('invalid-input'); // エラークラスを削除
+			if (warningBox) {
+				warningBox.style.display = 'none';
+			}
 		}
 	}
 
@@ -73,16 +59,40 @@
 		const errors = new Map();		// id: [msg, focusBody]
 		let validations = {};
 
-		// 入力時（input）／フォーカスアウト時（blur）にバリデート
+		// 入力時（input）／フォーカスアウト時（blur）に検証
 		function validatePublicationDate() {
 			const val = publicationDateInput.value.trim();
-			if (val !== '' && !validateDatetime(val)) {
+			let msg = null;
+			let normalizedDate = null;
+
+			if (val !== '') {
+				try {
+					normalizedDate = normalizeDate(val, { requiredPrecision: 'year' });
+				} catch (e) {
+					if (e instanceof InvalidFormatError) {
+						// フォーマットエラー
+						msg = '「YYYY/MM/DD」の形式で入力してください。（月、日は省略可能）';
+					} else if (e instanceof InvalidValueError) {
+						// 値エラー
+						msg = '存在しない日時です。';
+					} else if (e instanceof InvalidTimezoneError) {
+						// タイムゾーンエラー
+						msg = '不明なタイムゾーンです。';
+					} else {
+						// その他のエラー
+						throw e; // 予期しないエラーは再スロー
+					}
+				}
+			}
+
+			if (msg !== null) {
 				// 不正データ
-				msg = '不正な日時です。「YYYY/MM/DD hh:mm:ss」の形式で入力してください。（時刻は省略可能）';
-				showWarning(publicationDateInput, msg);
+				showWarning(publicationDateInput, 'エラー: ' + msg);
 				errors.set('publicationDate', [msg, publicationDateInput]);
 			} else {
 				// 正常
+				if (normalizedDate)
+					publicationDateInput.value = normalizedDate;
 				showWarning(publicationDateInput, '');
 				errors.delete('publicationDate');
 			}

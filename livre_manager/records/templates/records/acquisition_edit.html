@@ -3,7 +3,7 @@
 {% load static %}
 {% load widget_tweaks %}
 
-{% block title %}入手記録の編集{% endblock %}
+{% block title %}{% if is_new_record %}入手記録の新規作成{% else %}入手記録の編集{% endif %}{% endblock %}
 
 {% block breadcrumbs %}
 {% endblock %}
@@ -93,6 +93,7 @@
 {% endblock %}
 
 {% block extra_js %}
-	<script src="{% static 'records/js/acquisition_form.js' %}"></script>
-	<script src="{% static 'records/js/receipt_ocr.js' %}"></script>
+	<script type="module" src="{% static 'records/js/flex-datetime/index.js' %}"></script>
+	<script type="module" src="{% static 'records/js/acquisition_form.js' %}"></script>
+	<script type="module" src="{% static 'records/js/receipt_ocr.js' %}"></script>
 {% endblock %}

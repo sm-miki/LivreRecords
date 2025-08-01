@@ -43,7 +43,7 @@
 		<div class="inline-flow">
 			<div class="text-item">
 				{{ record.total_quantity }}点
-				{% inline_price_format record.total record.subtotal record.tax record.currency_code as price_str %}
+				{% format_price_and_tax record.total record.subtotal record.tax record.currency_code as price_str %}
 				{{ price_str | default:"&lt;金額未設定&gt;" }}
 			</div>
 		</div>
