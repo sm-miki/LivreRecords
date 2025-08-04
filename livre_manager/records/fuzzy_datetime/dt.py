@@ -1,14 +1,14 @@
 """
-flex-datetime
-日付・日時文字列を、設定可能な精度とゼロパディングで解析・正規化するためのライブラリ。
+fuzzy_datetime.dt
+精度付きの日時オブジェクトを表現するクラスを定義する。
 """
 from typing import Union
 import re
 from datetime import datetime, date, timedelta
 
-from .tz import Timezone
+from .tz import FlexiTimezone
 from .error import FDPrecisionError, FDInvalidTimezoneError, FDInvalidFormatError, FDInvalidValueError
-from .precision import FDPrecision
+from .precision import DatetimePrecision
 
 # --- 正規表現パターン ---
 
@@ -27,9 +27,9 @@ datetime_reg = re.compile(
 						r"(?P<sep4>[:.-])(?P<second>\d{1,2})"
 					r")?"
 				r")?"
-				r"(?:"
-					r"\s?(?P<tz>[a-zA-Z_]+|[+-]\d{1,2}:?\d{1,2})?"	# タイムゾーン
-				r")?"
+			r")?"
+			r"(?:"
+				r"\s?(?P<tz>[a-zA-Z_]+|(?:UTC)?[+-]\d{1,2}:?\d{1,2}|[a-zA-Z]+/[a-zA-Z_]+)?"	# タイムゾーン
 			r")?"
 		r")?"
 	r")?$"
@@ -45,47 +45,46 @@ date_reg = re.compile(
 )
 # @formatter:on
 
-class FlexDatetime:
+class FuzzyDatetime:
 	"""
 	精度付きの日時オブジェクトを表現するクラス。
 	"""
 	
 	def __init__(self,
-			precision: FDPrecision,
 			year: int, month: Union[int | None] = None, day: Union[int | None] = None,
 			hour: Union[int | None] = None, minute: Union[int | None] = None, second: Union[int | None] = None,
-			tz: Union[Timezone | None] = None,
+			tzinfo: Union[FlexiTimezone | None] = None,
+			precision: Union[DatetimePrecision | None] = None,
 	):
 		"""
 		初期化メソッド。
-		
+
 		Args:
-			precision (FDPrecision): 日時の精度。
+			precision (DatetimePrecision): 日時の精度。
 			year (int): 年。
 			month: (int | None, optional): 月。
 			day: (int | None, optional): 日。
 			hour: (int | None, optional): 時。
 			minute: (int | None, optional): 分。
 			second: (int | None, optional): 秒。
-			tz: (Timezone | None, optional): タイムゾーン情報。
+			tzinfo: (Timezone | None, optional): タイムゾーン情報。
 		"""
-		self._precision = precision
+		self._precision = precision or self._assume_precision(year, month, day, hour, minute, second)
 		self._year = year
-		self._month = month
-		self._day = day
-		self._hour = hour
-		self._minute = minute
-		self._second = second
-		self._tz = tz
+		self._month = month or 1
+		self._day = day or 1
+		self._hour = hour or 0
+		self._minute = minute or 0
+		self._second = second or 0
+		self._tzinfo = tzinfo
 	
 	@staticmethod
-	def new(
+	def _assume_precision(
 			year: int, month: Union[int | None] = None, day: Union[int | None] = None,
-			hour: Union[int | None] = None, minute: Union[int | None] = None, second: Union[int | None] = None,
-			tz: Union[str | Timezone | None] = None,
-	):
+			hour: Union[int | None] = None, minute: Union[int | None] = None, second: Union[int | None] = None
+	) -> DatetimePrecision:
 		"""
-		新しいFlexDatetimeオブジェクトを生成する。
+		指定された日時の精度を推定する。
 		
 		Args:
 			year (int): 年。
@@ -94,50 +93,35 @@ class FlexDatetime:
 			hour: (int | None, optional): 時。
 			minute: (int | None, optional): 分。
 			second: (int | None, optional): 秒。
-			tz: (str | Timezone | None, optional): タイムゾーン情報。
 
 		Returns:
-			FlexDatetime: 新しいFlexDatetimeオブジェクト。
+			DatetimePrecision: 推定された日時の精度。
 		"""
-		tz = Timezone.parse(tz) if isinstance(tz, str) else tz
-		now = datetime.now(tz=tz)
-		
-		parts = {
-			'year': year, 'month': month, 'day': day,
-			'hour': hour, 'minute': minute, 'second': second
-		}
-		i = 5
-		while i > 0:
-			p = FDPrecision.DatetimeOrder[i]
-			if parts[p.name] is not None:
-				precision = p
-				
-				# 精度範囲内の位に規定値を設定する
-				now_parts = {
-					'year': now.year, 'month': now.month, 'day': now.day,
-					'hour': now.hour, 'minute': now.minute, 'second': now.second
-				}
-				parts = { **now_parts, **parts }
-				break
-			
-			i -= 1
+		if second is not None:
+			return DatetimePrecision.Second
+		elif minute is not None:
+			return DatetimePrecision.Minute
+		elif hour is not None:
+			return DatetimePrecision.Hour
+		elif day is not None:
+			return DatetimePrecision.Day
+		elif month is not None:
+			return DatetimePrecision.Month
 		else:
-			precision = FDPrecision.Year
-		
-		return FlexDatetime(precision=precision, **parts, tz=tz)
+			return DatetimePrecision.Year
 	
 	@property
-	def precision(self) -> FDPrecision:
+	def precision(self) -> DatetimePrecision:
 		"""
 		日時の精度を返す。
 		
 		Returns:
-			FDPrecision: 日時の精度。
+			DatetimePrecision: 日時の精度。
 		"""
 		return self._precision
 	
 	@property
-	def year(self):
+	def year(self) -> int:
 		"""
 		年を返す。
 		
@@ -147,7 +131,7 @@ class FlexDatetime:
 		return self._year
 	
 	@property
-	def month(self):
+	def month(self) -> int:
 		"""
 		月を返す。月が指定されていない場合はNone。
 		Returns:
@@ -156,7 +140,7 @@ class FlexDatetime:
 		return self._month
 	
 	@property
-	def day(self):
+	def day(self) -> int:
 		"""
 		日を返す。日が指定されていない場合はNone。
 		Returns:
@@ -165,7 +149,7 @@ class FlexDatetime:
 		return self._day
 	
 	@property
-	def hour(self):
+	def hour(self) -> int:
 		"""
 		時間を返す。時間が指定されていない場合はNone。
 		
@@ -175,7 +159,7 @@ class FlexDatetime:
 		return self._hour
 	
 	@property
-	def minute(self):
+	def minute(self) -> int:
 		"""
 		分を返す。分が指定されていない場合はNone。
 		
@@ -185,7 +169,7 @@ class FlexDatetime:
 		return self._minute
 	
 	@property
-	def second(self):
+	def second(self) -> int:
 		"""
 		秒を返す。秒が指定されていない場合はNone。
 		
@@ -195,13 +179,13 @@ class FlexDatetime:
 		return self._second
 	
 	@property
-	def tz(self):
+	def tzinfo(self) -> Union[FlexiTimezone, None]:
 		"""
 		タイムゾーン情報を返す。タイムゾーンが指定されていない場合はNone。
 		Returns:
-			Timezone | None: タイムゾーン情報。
+			FlexiTimezone | None: タイムゾーン情報。
 		"""
-		return self._tz
+		return self._tzinfo
 	
 	def __repr__(self):
 		"""
@@ -210,26 +194,29 @@ class FlexDatetime:
 		Returns:
 			str: オブジェクトの文字列表現。
 		"""
-		s = f"FlexDatetime(precision={self._precision}, year={self._year}"
-		if self._month is not None:
-			s += f", month={self._month}"
-		if self._day is not None:
-			s += f", day={self._day}"
-		if self._hour is not None:
-			s += f", hour={self._hour}"
-		if self._minute is not None:
-			s += f", minute={self._minute}"
-		if self._second is not None:
-			s += f", second={self._second}"
-		if self._tz is not None:
-			s += f", tz={self._tz}"
+		s = f"FlexDatetime(precision={repr(self._precision)}, year={self._year}"
+		
+		part_funcs = [
+			lambda: f", month={self._month}",
+			lambda: f", day={self._day}",
+			lambda: f", hour={self._hour}",
+			lambda: f", minute={self._minute}",
+			lambda: f", second={self._second}",
+		]
+		for part in part_funcs[:self.precision.index]:
+			s += part()
+		
+		if self._tzinfo is not None:
+			s += f", tz={self._tzinfo}"
 		s += ")"
 		return s
 	
 	@staticmethod
 	def parse(
-			source, required_precision='year', accept_mixed_sep=True
-	) -> 'FlexDatetime':
+			source,
+			required_precision: Union[str, DatetimePrecision] = 'year',
+			accept_mixed_sep=True
+	) -> 'FuzzyDatetime':
 		"""
 		日時文字列を解析し、FlexDatetimeオブジェクトを生成する。
 
@@ -247,18 +234,22 @@ class FlexDatetime:
 		g = m.groupdict()
 		
 		# 入力の日時精度の特定
-		in_precision = FDPrecision.Second
-		for prec in FDPrecision.DatetimeOrder[1:]:
+		in_precision = DatetimePrecision.Second
+		for prec in DatetimePrecision.DatetimeOrder[1:]:
 			if g[prec.name] is None:
-				in_precision = FDPrecision.DatetimeOrder[prec.index - 1]
+				in_precision = DatetimePrecision.DatetimeOrder[prec.index - 1]
 				break
 		
 		# 要求精度に対する検証
 		if required_precision and required_precision != 'year':
-			try:
-				required_precision_obj = FDPrecision.Items[required_precision]
-			except KeyError:
-				raise FDInvalidValueError(f"Unknown required_precision: {required_precision}", details={ 'input': source, 'required_precision': required_precision })
+			if isinstance(required_precision, str):
+				try:
+					required_precision_obj = DatetimePrecision.Items[required_precision]
+				except KeyError:
+					raise FDInvalidValueError(f"Unknown required_precision: {required_precision}", details={ 'input': source, 'required_precision': required_precision })
+			else:
+				required_precision_obj = required_precision
+			
 			if in_precision < required_precision_obj:
 				raise FDPrecisionError(f"Precision not met ({required_precision}) for \"{source}\"", details={ 'input': source, 'required_precision': required_precision })
 		
@@ -309,19 +300,23 @@ class FlexDatetime:
 		tz_info = None
 		if tz_str := g.get('tz'):
 			try:
-				tz_info = Timezone.parse(tz_str)
+				tz_info = FlexiTimezone.parse(tz_str)
 			except FDInvalidFormatError as e:
 				raise FDInvalidTimezoneError(f"Invalid timezone format: \"{g['tz']}\"", details={ 'input': source, 'timezone': g['tz'] }) from e
 		
-		return FlexDatetime(
-			precision=in_precision,
+		return FuzzyDatetime(
 			year=year, month=month, day=day,
 			hour=hour, minute=minute, second=second,
-			tz=tz_info,
+			tzinfo=tz_info,
+			precision=in_precision,
 		)
 	
 	@staticmethod
-	def parse_date(source, required_precision='year', accept_mixed_sep=True) -> 'FlexDatetime':
+	def parse_date(
+			source,
+			required_precision: Union[str | DatetimePrecision] = 'year',
+			accept_mixed_sep=True
+	) -> 'FuzzyDatetime':
 		"""
 		日付文字列を解析し、FlexDatetimeオブジェクトを生成する。
 		
@@ -331,7 +326,7 @@ class FlexDatetime:
 			accept_mixed_sep (bool, optional): 日付の区切り文字が混在している場合に許可するかどうか。Defaults to True.
 
 		Returns:
-			FlexDatetime: 解析された日付オブジェクト。
+			FuzzyDatetime: 解析された日付オブジェクト。
 		Raises:
 			FDInvalidFormatError: 入力文字列のフォーマットが無効な場合。
 			FDInvalidValueError: 入力値が無効な場合（例:月や日が範囲外）。
@@ -344,20 +339,23 @@ class FlexDatetime:
 		g = m.groupdict()
 		
 		# 入力の日時精度の特定
-		in_precision = FDPrecision.Day
-		for p in FDPrecision.DateOrder:
+		in_precision = DatetimePrecision.Day
+		for p in DatetimePrecision.DateOrder:
 			if g[p.name] is None:
-				in_precision = FDPrecision.DateOrder[p.index - 1]
+				in_precision = DatetimePrecision.DateOrder[p.index - 1]
 				break
 		
 		# 要求精度に対する検証
 		if required_precision and required_precision != 'year':
-			try:
-				required_precision_obj = FDPrecision.Items[required_precision]
-			except KeyError:
-				raise FDInvalidValueError(f"Unknown required_precision: {required_precision}", details={ 'input': source, 'required_precision': required_precision })
+			if isinstance(required_precision, str):
+				try:
+					required_precision_obj = DatetimePrecision.Items[required_precision]
+				except KeyError:
+					raise FDInvalidValueError(f"Unknown required_precision: {required_precision}", details={ 'input': source, 'required_precision': required_precision })
+			else:
+				required_precision_obj = required_precision
 			
-			if required_precision > FDPrecision.Day:
+			if required_precision_obj > DatetimePrecision.Day:
 				raise FDInvalidValueError(f"Invalid required_precision: {required_precision}", details={ 'input': source, 'required_precision': required_precision })
 			
 			if in_precision < required_precision_obj:
@@ -391,35 +389,35 @@ class FlexDatetime:
 				if not (1 <= day <= days_in_month):
 					raise FDInvalidValueError(f"Day out of range: {day}", details={ 'input': source, 'day': day })
 		
-		return FlexDatetime(
-			precision=in_precision,
+		return FuzzyDatetime(
 			year=year, month=month, day=day,
+			precision=in_precision,
 		)
 	
-	def apply_timezone(self, tz: Union[str | Timezone]):
+	def apply_timezone(self, tz: Union[str | FlexiTimezone]):
 		"""
-		指定されたタイムゾーンを適用します。タイムゾーンが既に設定されている場合、変更は適用されません。
+		指定されたタイムゾーンを適用する。タイムゾーンが既に設定されている場合、変更は適用されません。
 
 		Args:
-			tz (str | Timezone): タイムゾーン文字列またはTimezoneオブジェクト。
+			tz (str | FlexiTimezone): タイムゾーン文字列またはTimezoneオブジェクト。
 		Returns:
-			FlexDatetime: タイムゾーンが適用された新しいFlexDatetimeオブジェクト。
+			FuzzyDatetime: タイムゾーンが適用された新しいFlexDatetimeオブジェクト。
 		"""
-		if self._tz:
+		if self._tzinfo:
 			return self
 		elif isinstance(tz, str):
-			tz = Timezone.parse(tz)
+			tz = FlexiTimezone.parse(tz)
 		
-		return FlexDatetime(
-			precision=self._precision,
+		return FuzzyDatetime(
 			year=self._year, month=self._month, day=self._day,
 			hour=self._hour, minute=self._minute, second=self._second,
-			tz=tz,
+			tzinfo=tz,
+			precision=self._precision,
 		)
 	
 	def format(self, format: str = '%Y/%m/%d %H:%M:%S %z') -> str:
 		"""
-		日時を指定されたフォーマットで文字列に変換します。
+		日時を指定されたフォーマットで文字列に変換する。
 
 		Args:
 			format (str, optional): フォーマット文字列。デフォルトは '%Y/%m/%d %H:%M:%S'。
@@ -428,15 +426,15 @@ class FlexDatetime:
 			str: フォーマットされた日時文字列。
 		"""
 		dt = self.to_datetime()
-		if tz := self._tz:
-			format = format.replace('%t', tz.short_name(utc_prefix=False))  # %t: タイムゾーンの短縮名(UTCプレフィックスなし)
-			format = format.replace('%T', tz.short_name(utc_prefix=True))  # %t: タイムゾーンの短縮名
+		if tz := self._tzinfo:
+			format = format.replace('%t', tz.short_name(utc_prefix=False))  # %t: タイムゾーンの短縮名(UTCプレフィックスなし。+09:00、JSTなど)
+			format = format.replace('%T', tz.short_name(utc_prefix=True))  # %T: タイムゾーンの短縮名(UTC+09:00、JSTなど)
 			format = format.replace('%o', tz.offset_str)  # %O: コロン付きオフセット(UCTプレフィックスなし)
 			format = format.replace('%O', 'UTC' + tz.offset_str)  # %O: コロン付きオフセット
 		else:
 			format = format.replace('%t', '')  # %t: タイムゾーンの短縮名(UTCプレフィックスなし)
-			format = format.replace('%T', '')  # %t: タイムゾーンの短縮名
-			format = format.replace('%o', '')  # %O: コロン付きオフセット(UCTプレフィックスなし)
+			format = format.replace('%T', '')  # %T: タイムゾーンの短縮名
+			format = format.replace('%o', '')  # %o: コロン付きオフセット(UCTプレフィックスなし)
 			format = format.replace('%O', '')  # %O: コロン付きオフセット
 		
 		return dt.strftime(format)
@@ -447,11 +445,10 @@ class FlexDatetime:
 			date_sep='/',
 			time_sep=':',
 			force_tz=False,
-			default_tz='UTC',
 			utc_prefix=False,
 	):
 		"""
-		日付時刻文字列を一貫した形式に正規化します。
+		日付時刻文字列を一貫した形式に正規化する。
 
 		Args:
 			zero_pad (bool, optional): 月、日、時、分、秒をゼロパディングするかどうか。
@@ -460,7 +457,6 @@ class FlexDatetime:
 			date_sep (str, optional): 日付の区切り文字。規定値は '/'。
 			time_sep (str, optional): 時刻の区切り文字。規定値は ':'。
 			force_tz (bool, optional): タイムゾーンが指定されていない場合にデフォルトタイムゾーンを強制的に適用するかどうか。
-			default_tz (str, optional): 入力文字列にタイムゾーンが含まれていない場合に適用されるデフォルトタイムゾーン。
 			utc_prefix (bool, optional): trueを指定した場合、タイムゾーンがUTCオフセットで表される場合に "UTC" のプレフィックスを付ける。
 		Returns:
 			 str: 正規化された日付時刻文字列。
@@ -471,7 +467,7 @@ class FlexDatetime:
 		out_precision = self._precision
 		if min_precision is not None:
 			try:
-				min_precision_obj = FDPrecision.Items[min_precision]
+				min_precision_obj = DatetimePrecision.Items[min_precision]
 			except KeyError:
 				raise FDInvalidValueError(f"Unknown min_precision: {min_precision}", details={ 'datetime': self, 'min_precision': min_precision })
 			if out_precision < min_precision_obj:
@@ -479,28 +475,30 @@ class FlexDatetime:
 		
 		# 文字列組み立て
 		out = _pad(self._year, 4) if zero_pad else str(self._year)
-		if out_precision >= FDPrecision.Month:
-			out += date_sep + (_pad(self._month) if zero_pad else str(self._month))
-		if out_precision >= FDPrecision.Day:
-			out += date_sep + (_pad(self._day) if zero_pad else str(self._day))
-		if out_precision >= FDPrecision.Hour:
-			out += ' ' + (_pad(self._hour) if zero_pad else str(self._hour))
-		if out_precision >= FDPrecision.Minute:
-			out += time_sep + (_pad(self._minute) if zero_pad else str(self._minute))
-		if out_precision >= FDPrecision.Second:
-			out += time_sep + (_pad(self._second) if zero_pad else str(self._second))
+		parts_configs = [
+			(self.month, 2, date_sep),
+			(self.day, 2, date_sep),
+			(self.hour, 2, ' '),
+			(self.minute, 2, time_sep),
+			(self.second, 2, time_sep),
+		]
+		for part, length, sep in parts_configs[:out_precision.index]:
+			out += sep + (_pad(part, length) if zero_pad else str(part))
 		
 		# タイムゾーン
-		if self._tz:
-			out += ' ' + self._tz.short_name(utc_prefix=utc_prefix)
-		elif force_tz and default_tz is not None:
-			try:
-				normalized_default_tz = Timezone.parse(default_tz)
-			except FDInvalidFormatError as e:
-				raise FDInvalidTimezoneError(f"Default timezone format invalid: '{default_tz}'", details={ 'default_tz': default_tz }) from e
-			else:
-				out += ' ' + normalized_default_tz.short_name(utc_prefix=utc_prefix)
+		if self._tzinfo:
+			out += ' ' + self._tzinfo.short_name(utc_prefix=utc_prefix)
+		
 		return out
+	
+	def to_date(self) -> date:
+		"""
+		FlexDatetimeオブジェクトをdateオブジェクトに変換する。
+		
+		Returns:
+			date: 日付オブジェクト。
+		"""
+		return date(self._year, self._month, self._day)
 	
 	def to_datetime(self):
 		"""
@@ -509,25 +507,55 @@ class FlexDatetime:
 		Returns:
 			datetime: 日時オブジェクト。
 		"""
-		tz = self._tz
+		tz = self._tzinfo
 		
 		# Pythonのdatetimeは直接UTCオフセットを持つオブジェクトとして構築できる
 		# naive datetimeを作成し、タイムゾーンオフセットを適用してUTC時刻を計算
-		args = [
-			self._year, self._month or 1, self._day or 1,
-			self._hour or 0, self._minute or 0, self._second or 0
-		]
-		return datetime(*args, tzinfo=tz)
+		return datetime(
+			self._year, self._month, self._day,
+			self._hour, self._minute, self._second,
+			tzinfo=tz,
+		)
+	
+	def to_isoformat(self, sep='T', timespec='auto') -> str:
+		"""
+		FlexDatetimeオブジェクトをISO 8601形式の文字列に変換する。
+
+		Args:
+			sep (str, optional): 日付と時刻の区切り文字。デフォルトは 'T'。
+			timespec (str, optional): 時刻の精度。'auto'、'seconds'、'milliseconds'、'microseconds' のいずれか。
+
+		Returns:
+			str: ISO 8601形式の日時文字列。
+		"""
+		dt = self.to_datetime()
+		return dt.isoformat(sep=sep, timespec=timespec)
+	
+	def __str__(self):
+		"""
+		FlexDatetimeオブジェクトの文字列表現を返す。
+		
+		Returns:
+			str: 日時の文字列表現。
+		"""
+		return self.normalize(
+			zero_pad=True,
+			min_precision=None,
+			date_sep='/',
+			time_sep=':',
+			force_tz=False,
+			utc_prefix=False,
+		)
 
 # --- 内部関数 ---
 
 def _pad(val: int, length: int = 2) -> str:
 	"""
-	数値をゼロパディングして文字列に変換します。
+	数値をゼロパディングして文字列に変換する。
 
 	Args:
 		 val (int): ゼロパディングする数値。
-		 length (int, optional): パディング後の文字列の最小長。Defaults to 2.
+		 length (int, optional): パディング後の文字列の最小長。
 	Returns:
 		 str: ゼロパディングされた文字列。
 	"""

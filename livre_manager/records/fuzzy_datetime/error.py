@@ -1,4 +1,9 @@
-class FlexDatetimeError(Exception):
+"""
+fuzzy_datetime.error
+日時関連のカスタムエラークラスを定義する。
+"""
+
+class FuzzyDatetimeError(Exception):
 	"""
 	日時関連のエラーを表す基底カスタムエラークラス。
 	"""
@@ -9,7 +14,7 @@ class FlexDatetimeError(Exception):
 		self.code = code
 		self.details = details if details is not None else { }
 
-class FDInvalidFormatError(FlexDatetimeError):
+class FDInvalidFormatError(FuzzyDatetimeError):
 	"""
 	書式が不正な場合のエラー。
 	"""
@@ -18,7 +23,7 @@ class FDInvalidFormatError(FlexDatetimeError):
 		super().__init__(message, 'INVALID_FORMAT', details)
 		self.name = 'InvalidFormatError'
 
-class FDInvalidValueError(FlexDatetimeError):
+class FDInvalidValueError(FuzzyDatetimeError):
 	"""
 	値が範囲外の場合のエラー。
 	"""
@@ -27,7 +32,7 @@ class FDInvalidValueError(FlexDatetimeError):
 		super().__init__(message, 'INVALID_VALUE', details)
 		self.name = 'InvalidValueError'
 
-class FDPrecisionError(FlexDatetimeError):
+class FDPrecisionError(FuzzyDatetimeError):
 	"""
 	精度が不足している場合のエラー。
 	"""
@@ -36,7 +41,7 @@ class FDPrecisionError(FlexDatetimeError):
 		super().__init__(message, 'PRECISION_NOT_MET', details)
 		self.name = 'PrecisionError'
 
-class FDInvalidTimezoneError(FlexDatetimeError):
+class FDInvalidTimezoneError(FuzzyDatetimeError):
 	"""
 	タイムゾーンが不正な場合のエラー。
 	"""

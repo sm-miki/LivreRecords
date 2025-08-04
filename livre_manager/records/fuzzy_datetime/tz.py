@@ -1,10 +1,13 @@
+"""
+タイムゾーンを表すクラスを定義する。
+"""
 import re
 from datetime import timedelta, tzinfo, timezone
 
-from .error import FDInvalidFormatError
+from .error import FDInvalidTimezoneError
 from .tz_map import TZ_MAP
 
-class Timezone(tzinfo):
+class FlexiTimezone(tzinfo):
 	AllTimezonesByAbbr = { }
 	
 	def __init__(self, offset: int, abbreviation: str = None, name: str = None):
@@ -63,6 +66,7 @@ class Timezone(tzinfo):
 		s = f"<Timezone UTC{self._offset_str}"
 		if self._name:
 			s += f" {repr(self._name)}"
+		if self._abbreviation:
 			s += f" {repr(self._abbreviation)}"
 		s += ">"
 		return s
@@ -71,7 +75,7 @@ class Timezone(tzinfo):
 		return self.name or self._abbreviation or f"UTC{self._offset_str}"
 	
 	def __eq__(self, other):
-		if not isinstance(other, Timezone):
+		if not isinstance(other, FlexiTimezone):
 			return NotImplemented
 		return (self._abbreviation == other._abbreviation and
 				  self._offset == other._offset and
@@ -97,7 +101,7 @@ class Timezone(tzinfo):
 	# End of datetime.tzinfo interface methods
 	
 	@staticmethod
-	def parse(s: str) -> 'Timezone':
+	def parse(s: str) -> 'FlexiTimezone':
 		"""
 		文字列からタイムゾーンをパースして返す。
 		タイムゾーンの形式は以下のいずれか。
@@ -109,37 +113,37 @@ class Timezone(tzinfo):
 		Args:
 			 s (str): タイムゾーンを表す文字列。（例: 'Z', 'UTC', 'JST', '+09:00' など）
 		Returns:
-			 Timezone: パースされたタイムゾーンオブジェクト。
+			 FlexiTimezone: パースされたタイムゾーンオブジェクト。
 		Raises:
 			 InvalidFormatError: 不明なフォーマット
 		"""
 		tz_input = s.lower()
-		if tz := Timezone.AllTimezones.get(tz_input, None):
+		if tz := FlexiTimezone.AllTimezones.get(tz_input, None):
 			# タイムゾーン名形式（Asia/Tokyoなど）
 			return tz
 		
 		tz_input = s.upper()
 		if tz_input == 'Z':
-			return Timezone.AllTimezonesByAbbr['UTC']
+			return FlexiTimezone.AllTimezonesByAbbr['UTC']
 		
-		if tz := Timezone.AllTimezonesByAbbr.get(tz_input, None):
+		if tz := FlexiTimezone.AllTimezonesByAbbr.get(tz_input, None):
 			# タイムゾーン略称形式（JST, UTCなど）
 			return tz
 		
 		# +HH:MM／-HHMM 形式のパース
-		m = re.match(r"^([+-])(\d{1,2}):?(\d{1,2})$", tz_input)
+		m = re.match(r"^(?:UTC)?([+-])(\d{1,2}):?(\d{1,2})$", tz_input)
 		if m:
 			sign, hours, minutes = m.groups()
 			offset = int(hours) * 60 + int(minutes)
-			return Timezone(offset=-offset if sign == '-' else offset, abbreviation=None, name=None)
+			return FlexiTimezone(offset=-offset if sign == '-' else offset, abbreviation=None, name=None)
 		
-		raise FDInvalidFormatError(f"Unknown timezone format: \"{s}\"", details={ 'input': s })
+		raise FDInvalidTimezoneError(f"Unknown timezone format: \"{s}\"", details={ 'input': s })
 
 # 既知のタイムゾーンの一覧
-Timezone.AllTimezones = {
-	tz_info['name'].lower(): Timezone(offset=tz_info['utcOffset'], abbreviation=tz_info['abbr'], name=tz_info['name'])
+FlexiTimezone.AllTimezones = {
+	tz_info['name'].lower(): FlexiTimezone(offset=tz_info['utcOffset'], abbreviation=tz_info['abbr'], name=tz_info['name'])
 	for tz_info in TZ_MAP
 }
 
 # タイムゾーンの略称をキーとする辞書。
-Timezone.AllTimezonesByAbbr = { tz.abbreviation: tz for tz in Timezone.AllTimezones.values() }
+FlexiTimezone.AllTimezonesByAbbr = { tz.abbreviation: tz for tz in FlexiTimezone.AllTimezones.values() }
