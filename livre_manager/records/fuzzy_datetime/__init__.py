@@ -1,4 +1,4 @@
 from .dt import FuzzyDatetime
-from .tz import FlexiTimezone
-from .precision import DatetimePrecision
+from .precision import DatePrecision
+from . import tz
 from . import error

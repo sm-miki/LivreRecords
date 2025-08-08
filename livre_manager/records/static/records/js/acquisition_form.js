@@ -2,7 +2,7 @@
 
 						// 精度エラー
 						// 精度エラー
-import { normalizeDateTime, InvalidFormatError, InvalidValueError, PrecisionError, InvalidTimezoneError } from './flex-datetime/index.js';
+import { normalizeDateTime, InvalidFormatError, InvalidValueError, PrecisionError, InvalidTimezoneError } from './fuzzy-datetime/index.js';
 
 (() => {
 	function showWarning(field, message) {

@@ -1,6 +1,6 @@
 /* static/js/book_form.js */
 
-import { normalizeDate, InvalidFormatError, InvalidValueError, PrecisionError, InvalidTimezoneError } from './flex-datetime/index.js';
+import { normalizeDate, InvalidFormatError, InvalidValueError, PrecisionError, InvalidTimezoneError } from './fuzzy-datetime/index.js';
 
 (() => {
 

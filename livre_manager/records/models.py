@@ -12,7 +12,7 @@ import dateutil.parser
 from .unique_id_field import NanoIDField
 from .currency import CURRENCY_CODE_CHOICES, JPY
 from .fuzzy_datetime import FuzzyDatetime
-from .fuzzy_datetime.error import FuzzyDatetimeError
+from .fuzzy_datetime.error import FDError
 
 default_date = datetime(1, 1, 1)
 
@@ -180,12 +180,12 @@ class Acquisition(models.Model):
 		# 入手日時文字列の検証と正規化
 		if self.acquisition_date_str:
 			try:
-				dt = FuzzyDatetime.parse(self.acquisition_date_str, required_precision='day')
+				dt = FuzzyDatetime.parse(self.acquisition_date_str, precision_required='day')
 				try:
-					self.acquisition_date_str = dt.normalize(default_tz='JST')
-				except FuzzyDatetimeError:
+					self.acquisition_date_str = dt.to_string()
+				except FDError:
 					pass
-			except FuzzyDatetimeError:
+			except FDError:
 				self.acquisition_date = None
 				raise
 	
@@ -320,12 +320,12 @@ class Book(models.Model):
 		# 入手日時文字列の検証と正規化
 		if self.publication_date_str:
 			try:
-				dt = FuzzyDatetime.parse_date(self.publication_date_str, required_precision='year')
+				dt = FuzzyDatetime.parse_date(self.publication_date_str, precision_required='year')
 				try:
-					self.publication_date_str = dt.normalize(default_tz='JST')
-				except FuzzyDatetimeError:
+					self.publication_date_str = dt.to_string()
+				except FDError:
 					pass
-			except FuzzyDatetimeError:
+			except FDError:
 				self.publication_date = None
 				raise
 

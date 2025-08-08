@@ -1,8 +1,6 @@
 from typing import Union, Sequence
 import os
 import numpy as np
-import cv2
-from PIL.Image import Image as PILImage
 
 from .base_ocr_engine import BaseOCREngine, OCRTextBlock
 

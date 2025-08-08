@@ -13,12 +13,13 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import environ
 
-# .envファイルのパスを指定
-env = environ.Path(__file__) - 3
-environ.Env.read_env(".env")
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# 環境変数の読み込み
+env = environ.Env()
+env_file = str(BASE_DIR / '.env')
+env.read_env(env_file)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/

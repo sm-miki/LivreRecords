@@ -1,5 +1,5 @@
 /**
- * @module flex-datetime
+ * @module fuzzy-datetime
  * @description
  * 日付・日時文字列を、設定可能な精度とゼロパディングで解析・正規化するためのライブラリ。
  */
@@ -9,7 +9,27 @@ import { TZ_MAP } from './tz.js';
 // --- 定数群 ---
 
 // --- 正規表現パターン ---
-const dateTimeReg = /^(?<year>\d{4})(?:(?<sep1>[-\/.])(?<month>\d{1,2})(?:(?<sep2>[-\/.])(?<day>\d{1,2})(?:[ T](?<hour>\d{1,2})(?:(?<sep3>[:.-])(?<minute>\d{1,2})(?:(?<sep4>[:.-])(?<second>\d{1,2}))?)?(?:\s?(?<Z>[a-zA-Z_]+|[+-]\d{1,2}:?\d{1,2})?))?)?)?$/;
+const dateTimeReg = new RegExp(
+	"^(?<year>\\d{4})" +
+	"(?:" +
+		"(?<sep1>[/.-])(?<month>\\d{1,2})" +
+		"(?:" +
+			"(?<sep2>[/.-])(?<day>\\d{1,2})" +
+			"(?:" +
+				"[ T](?<hour>\\d{1,2})" +
+				"(?:" +
+					"(?<sep3>[:.-])(?<minute>\\d{1,2})" +
+					"(?:" +
+						"(?<sep4>[:.-])(?<second>\\d{1,2})" +
+					")?" +
+				")?" +
+				"(?:" +
+					"\\s?(?<tz>[a-zA-Z_]+|(?:UTC)?(?<sign>[+-])(?<offset>(?<hours>\\d{1,2}):(?<minutes>\\d{1,2})|(?<plain_offset>\\d{1,4}))|[a-zA-Z]+/[a-zA-Z_]+)" +
+				")?" +
+			")?" +
+		")?" +
+	")?$"
+)
 const dateReg = /^(?<year>\d{4})(?:(?<sep1>[-\/.])(?<month>\d{1,2})(?:(?<sep2>[-\/.])(?<day>\d{1,2}))?)?$/;
 
 const dateTimePrecisionOrder = ['year', 'month', 'day', 'hour', 'minute', 'second'];
@@ -340,12 +360,12 @@ function matchDateTime(s, options = {}) {
 
 	// タイムゾーンの検証
 	let tz = null;
-	if (g.Z) {
+	if (g.tz) {
 		try {
-			tz = parseTz(g.Z);
+			tz = parseTz(g);
 		} catch (e) {
 			if (e instanceof InvalidFormatError) {
-				throw new InvalidTimezoneError(`Invalid timezone format: "${g.Z}"`, { input: s, tz: g.Z });
+				throw new InvalidTimezoneError(`Invalid timezone format: "${g.tz}"`, { input: s, tz: g.tz });
 			}
 			throw e;
 		}
@@ -419,10 +439,10 @@ function matchDate(s, options = {}) {
  * @returns {Object} タイムゾーンオフセットの文字列と分単位のオフセット
  * @throws {Error} 不明なフォーマット
  */
-function parseTz(s, options = {}) {
+function parseTz(g, options = {}) {
 	const { defTz = 'UTC', forceTz = false } = options;
 
-	let tz = (s || defTz).toUpperCase();
+	let tz = (g.tz || defTz).toUpperCase();
 	if (tz === 'Z') {
 		tz = 'UTC';
 		return { type: 'z', label: tz, ... TZ_MAP[tz]};
@@ -431,17 +451,39 @@ function parseTz(s, options = {}) {
 		return { type: 'abbr', label: tz, ...TZ_MAP[tz] };
 
 	// +HH:MM／-HHMM 形式のパース
-	const m = tz.match(/^([+-])(\d{1,2}):?(\d{1,2})$/);
-	if (m) {
-		const sign = m[1];
-		const h = m[2];
-		const mm = m[3];
+	if (g.offset) {
+		let h, mm;
+		if (g.plain_offset) {
+			// HHMM 形式
+			let po = g.plain_offset;
+			switch (po.length) {
+			case 1:	// H
+			case 2:	// HH
+				h = po;
+				mm = '0';
+				break;
+			case 3: // HMM
+				h = po.slice(0, 1);
+				mm = po.slice(1, 3);
+				break;
+			case 4: // HHMM
+				h = po.slice(0, 2);
+				mm = po.slice(2, 4);
+				break;
+			}
+		} else {
+			h = g.hours;
+			mm = g.minutes;
+		}
+		const sign = g.sign;
 		const offsetStr = `${sign}${h.padStart(2, '0')}:${mm.padStart(2, '0')}`
+		const offsetMins = parseInt(h, 10) * 60 + parseInt(mm, 10);
+
 		return {
 			type: 'offset',
 			label: offsetStr,
 			offsetStr,
-			offsetMins: (sign == '+' ? 1 : -1) * (parseInt(h, 10) * 60 + parseInt(mm, 10)),
+			offsetMins: sign == '-' ? -offsetMins : offsetMins,
 		};
 	}
 

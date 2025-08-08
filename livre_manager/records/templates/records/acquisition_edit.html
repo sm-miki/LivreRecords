@@ -55,7 +55,7 @@
 	</div>
 
 	<div>
-		<h3>項目別情報</h3>
+		<h3>項目内訳</h3>
 		{{ item_formset.management_form }}
 
 		<table id="items-container" class="detail-table">
@@ -93,7 +93,7 @@
 {% endblock %}
 
 {% block extra_js %}
-	<script type="module" src="{% static 'records/js/flex-datetime/index.js' %}"></script>
+	<script type="module" src="{% static 'records/js/fuzzy-datetime/index.js' %}"></script>
 	<script type="module" src="{% static 'records/js/acquisition_form.js' %}"></script>
 	<script type="module" src="{% static 'records/js/receipt_ocr.js' %}"></script>
 {% endblock %}

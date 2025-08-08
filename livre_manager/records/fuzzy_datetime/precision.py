@@ -2,66 +2,67 @@
 fuzzy_datetime.precision
 日時の精度を表すクラスを定義する。
 """
-from typing import Dict, List
+from typing import Dict, List, Tuple
+from enum import IntEnum
 
-class DatetimePrecision:
-	def __init__(self, index, label):
-		self.index = index
-		self.name = label
+class DatePrecision(IntEnum):
+	YEAR = 0
+	MONTH = 1
+	DAY = 2
+	HOUR = 3
+	MINUTE = 4
+	SECOND = 5
+	MAX = SECOND
 	
-	def __repr__(self):
-		return f"DatetimePrecision.{self.name.capitalize()}"
+	@classmethod
+	def all(cls) -> Tuple["DatePrecision", ...]:
+		# tuple() で全メンバーを列挙
+		return tuple(cls)
+	
+	@classmethod
+	def date_precisions(cls) -> Tuple["DatePrecision", ...]:
+		# IntEnum なので <= DAY が効く
+		return cls.YEAR, cls.MONTH, cls.DAY
+	
+	@classmethod
+	def slice(cls, start, end, step=1) -> Tuple["DatePrecision", ...]:
+		return tuple(cls)[start:end:step]
+	
+	@classmethod
+	def by_name(cls, name: str) -> "DatePrecision":
+		"""
+		名前から精度を取得する。
+		"""
+		return cls[name.upper()]
+	
+	@classmethod
+	def __class_getitem__(cls, item):
+		"""
+		名前から精度を取得するためのクラスメソッド。
+		"""
+		if isinstance(item, str):
+			return cls[item]
+		elif isinstance(item, slice):
+			# スライスを使って精度の範囲を取得
+			if not isinstance(item.start, str):
+				raise TypeError("Slice start must be a string for DatePrecision")
+			if not isinstance(item.stop, str):
+				raise TypeError("Slice stop must be a string for DatePrecision")
+			if item.step is not None and not isinstance(item.step, int):
+				raise TypeError("Slice step must be an integer for DatePrecision")
+			
+			return cls.all()[cls[item.start.upper()]:cls[item.stop.upper()]:item.step or 1]
+		else:
+			raise TypeError(f"Invalid type for DatePrecision: {type(item)}")
 	
 	def __str__(self):
+		"""
+		精度を文字列で表現する。
+		"""
 		return self.name
 	
-	def __int__(self):
-		return self.index
-	
-	def __lt__(self, other):
-		if isinstance(other, DatetimePrecision):
-			return self.index < other.index
-		raise TypeError(f"Cannot compare DTPrecision with {type(other)}")
-	
-	def __le__(self, other):
-		if isinstance(other, DatetimePrecision):
-			return self.index <= other.index
-		raise TypeError(f"Cannot compare DTPrecision with {type(other)}")
-	
-	Year: 'DatetimePrecision'
-	Month: 'DatetimePrecision'
-	Day: 'DatetimePrecision'
-	Hour: 'DatetimePrecision'
-	Minute: 'DatetimePrecision'
-	Second: 'DatetimePrecision'
-	
-	Items: Dict[str, 'DatetimePrecision']
-	DatetimeOrder: List['DatetimePrecision']
-	DateOrder: List['DatetimePrecision']
-
-DatetimePrecision.Year = DatetimePrecision(0, 'year')
-DatetimePrecision.Month = DatetimePrecision(1, 'month')
-DatetimePrecision.Day = DatetimePrecision(2, 'day')
-DatetimePrecision.Hour = DatetimePrecision(3, 'hour')
-DatetimePrecision.Minute = DatetimePrecision(4, 'minute')
-DatetimePrecision.Second = DatetimePrecision(5, 'second')
-
-DatetimePrecision.DatetimeOrder = [
-	DatetimePrecision.Year,
-	DatetimePrecision.Month,
-	DatetimePrecision.Day,
-	DatetimePrecision.Hour,
-	DatetimePrecision.Minute,
-	DatetimePrecision.Second,
-]
-
-DatetimePrecision.DateOrder = [
-	DatetimePrecision.Year,
-	DatetimePrecision.Month,
-	DatetimePrecision.Day,
-]
-
-DatetimePrecision.Items = {
-	p.name: p
-	for p in DatetimePrecision.DatetimeOrder
-}
+	def __repr__(self):
+		"""
+		精度を文字列で表現する。
+		"""
+		return f"{self.__class__.__name__}.{self.name}"
