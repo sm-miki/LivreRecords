@@ -28,7 +28,7 @@
 		<thead>
 			<th></th>
 			<th>全期間</th>
-			<th>今月</th>
+			<th>{{ this_month }}月</th>
 		</thead>
 		<tr>
 			<th>購入記録数</th>
@@ -52,9 +52,20 @@
 		</tr>
 	</table>
 
+	<h3>購入金額</h3>
 	{% for code, stats in currency_stats.items %}
-		<h4>購入金額（{{ stats.label }}）</h4>
+		<h4>{{ stats.label }}</h4>
 		<table class="detail-table">
+			<thead>
+				<th></th>
+				<th>全期間</th>
+				<th>{{ this_month }}月</th>
+			</thead>
+			<tr>
+				<th>点数</th>
+				<td>{{ stats.total_book_count }}</td>
+				<td>{{ stats.this_month_book_count }}</td>
+			</tr>
 			<tr>
 				<th>購入金額</th>
 				<td>{{ stats.total_amount | format_currency:code }}</td>
@@ -63,10 +74,13 @@
 			<tr>
 				<th>平均価格</th>
 				<td>{{ stats.average_price | format_currency:code }}</td>
-				<td>{{ stats.this_month_average_price | format_currency:code }}</td>
+				<td>{{ stats.this_month_average_price | format_currency:code | default:"-" }}</td>
 			</tr>
 		</table>
+	{% empty %}
+		入手記録はありません。
 	{% endfor %}
+
 </div>
 <div id="bookStats" class="tab-content">
 	<h3>

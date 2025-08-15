@@ -151,6 +151,11 @@
 				{% endif %}
 			</div>
 		</div>
+		<div class="inline-flow">
+			<div class="text-item">
+				<span class="label">メモ:</span> {{ item.user_memo | default:"-" }}
+			</div>
+		</div>
 	</div>
 {% empty %}
 	<div>書籍または項目が登録されていません。</div>

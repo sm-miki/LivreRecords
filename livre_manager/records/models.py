@@ -185,6 +185,8 @@ class Acquisition(models.Model):
 					self.acquisition_date_str = dt.to_string()
 				except FDError:
 					pass
+				
+				self.acquisition_date = dt.to_datetime()
 			except FDError:
 				self.acquisition_date = None
 				raise
@@ -325,6 +327,8 @@ class Book(models.Model):
 					self.publication_date_str = dt.to_string()
 				except FDError:
 					pass
+
+				self.publication_date = dt.to_datetime()
 			except FDError:
 				self.publication_date = None
 				raise

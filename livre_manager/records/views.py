@@ -381,7 +381,7 @@ def stats(request):
 	"""
 	入手記録および書籍一覧の統計情報を表示するビュー。
 	"""
-	today = timezone.localdate()
+	today = timezone.now()
 	start_of_this_month = today.replace(day=1)
 	
 	if start_of_this_month.month == 12:
@@ -389,6 +389,8 @@ def stats(request):
 	else:
 		next_month_start = start_of_this_month.replace(month=start_of_this_month.month + 1, day=1)
 	end_of_this_month = next_month_start - timedelta(days=1)
+	
+	this_month = today.month
 	
 	"""
 	入手記録に基づく集計
@@ -450,7 +452,7 @@ def stats(request):
 		
 		# 購入冊数（平均価格算出用）
 		total_book_count = purchased_books.aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-		if code == 'JPY' or total_book_count > 0:
+		if total_book_count > 0:
 			this_month_book_count = this_month_purchased_books.aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
 			
 			# 購入金額
@@ -459,14 +461,16 @@ def stats(request):
 			
 			# 平均価格
 			average_price = total_amount / total_book_count
-			this_month_average_price = this_month_total_amount / this_month_book_count if this_month_book_count > 0 else 0
+			this_month_average_price = this_month_total_amount / this_month_book_count if this_month_book_count > 0 else None
 			
 			currency_stats[code] = {
 				'label': info['label'],
 				'symbol': info['symbol'],
+				'total_book_count': total_book_count,
 				'total_amount': total_amount,
-				'this_month_total_amount': this_month_total_amount,
 				'average_price': average_price,
+				'this_month_book_count': this_month_book_count,
+				'this_month_total_amount': this_month_total_amount,
 				'this_month_average_price': this_month_average_price,
 			}
 	
@@ -501,6 +505,7 @@ def stats(request):
 	owned_books_count = Book.objects.filter(has_item=True).count()
 	
 	context = {
+		'this_month': this_month,
 		'total_acquisition_records': total_acquisition_records,
 		'this_month_total_acquisition_records': this_month_total_acquisition_records,
 		'purchase_book_count': purchase_book_count,
