@@ -91,32 +91,40 @@ class Acquisition(models.Model):
 	)
 	
 	# 合計支払金額
-	total = models.IntegerField(
+	total = models.DecimalField(
 		null=True,
 		blank=True,
 		verbose_name='合計支払金額',
-		help_text='支払った合計金額（税込）'
+		help_text='支払った合計金額（税込）',
+		max_digits=9,
+		decimal_places=3,
 	)
 	# 税抜金額
-	subtotal = models.IntegerField(
+	subtotal = models.DecimalField(
 		null=True,
 		blank=True,
 		verbose_name='税抜金額',
-		help_text='税抜の合計金額'
+		help_text='税抜の合計金額',
+		max_digits=9,
+		decimal_places=3,
 	)
 	# 税額
-	tax = models.IntegerField(
+	tax = models.DecimalField(
 		null=True,
 		blank=True,
 		verbose_name='税額',
-		help_text='消費税額'
+		help_text='消費税額',
+		max_digits=9,
+		decimal_places=3,
 	)
 	# その他費用 (送料など)
-	extra_fee = models.IntegerField(
+	extra_fee = models.DecimalField(
 		null=True,
 		blank=True,
 		verbose_name='その他費用',
-		help_text='送料など追加費用'
+		help_text='送料など追加費用',
+		max_digits=9,
+		decimal_places=3,
 	)
 	
 	# 支払い方法
@@ -223,11 +231,11 @@ class AcquiredItem(models.Model):
 	# 商品名・説明
 	description = models.TextField(blank=True)
 	# 税込価格
-	price = models.IntegerField(null=True, blank=True)
+	price = models.DecimalField(null=True, blank=True, max_digits=9, decimal_places=3)
 	# 税抜価格
-	net_price = models.IntegerField(null=True, blank=True)
+	net_price = models.DecimalField(null=True, blank=True, max_digits=9, decimal_places=3)
 	# 税額 (税込小計の場合)
-	tax = models.IntegerField(null=True, blank=True)
+	tax = models.DecimalField(null=True, blank=True, max_digits=9, decimal_places=3)
 	# 数量
 	quantity = models.IntegerField(null=True, blank=True, default=1)
 	# ユーザーメモ
@@ -273,7 +281,7 @@ class Book(models.Model):
 	# 出版日シリアル値
 	publication_date = models.DateField(null=True, blank=True)
 	# 定価
-	price = models.IntegerField(null=True, blank=True)
+	price = models.DecimalField(null=True, blank=True, max_digits=9, decimal_places=3)
 	# 通貨単位
 	currency_code = models.CharField(max_length=10, choices=CURRENCY_CODE_CHOICES, blank=True, default=JPY)
 	# 書影画像
@@ -327,7 +335,7 @@ class Book(models.Model):
 					self.publication_date_str = dt.to_string()
 				except FDError:
 					pass
-
+				
 				self.publication_date = dt.to_datetime()
 			except FDError:
 				self.publication_date = None
