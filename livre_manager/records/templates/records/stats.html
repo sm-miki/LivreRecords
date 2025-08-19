@@ -26,30 +26,34 @@
 
 	<table class="detail-table">
 		<thead>
-			<th></th>
-			<th>全期間</th>
-			<th>{{ this_month }}月</th>
+			<tr>
+				<th></th>
+				<th>全期間</th>
+				<th>{{ this_month }}月</th>
+			</tr>
 		</thead>
-		<tr>
-			<th>購入記録数</th>
-			<td>{{ total_acquisition_records }}</td>
-			<td>{{ this_month_total_acquisition_records }}</td>
-		</tr>
-		<tr>
-			<th>購入点数</th>
-			<td>{{ purchase_book_count }}</td>
-			<td>{{ this_month_purchase_book_count }}</td>
-		</tr>
-		<tr>
-			<th>その他入手点数</th>
-			<td>{{ other_acquisition_book_count }}</td>
-			<td>{{ this_month_other_acquisition_book_count }}</td>
-		</tr>
-		<tr>
-			<th>合計入手点数</th>
-			<td>{{ total_acquired_book_count }}</td>
-			<td>{{ this_month_total_acquired_book_count }}</td>
-		</tr>
+		<tbody>
+			<tr>
+				<th>購入記録数</th>
+				<td>{{ total_acquisition_records }}</td>
+				<td>{{ this_month_total_acquisition_records }}</td>
+			</tr>
+			<tr>
+				<th>購入点数</th>
+				<td>{{ purchase_book_count }}</td>
+				<td>{{ this_month_purchase_book_count }}</td>
+			</tr>
+			<tr>
+				<th>その他入手点数</th>
+				<td>{{ other_acquisition_book_count }}</td>
+				<td>{{ this_month_other_acquisition_book_count }}</td>
+			</tr>
+			<tr>
+				<th>合計入手点数</th>
+				<td>{{ total_acquired_book_count }}</td>
+				<td>{{ this_month_total_acquired_book_count }}</td>
+			</tr>
+		</tbody>
 	</table>
 
 	<h3>購入金額</h3>
@@ -57,25 +61,29 @@
 		<h4>{{ stats.label }}</h4>
 		<table class="detail-table">
 			<thead>
-				<th></th>
-				<th>全期間</th>
-				<th>{{ this_month }}月</th>
+				<tr>
+					<th></th>
+					<th>全期間</th>
+					<th>{{ this_month }}月</th>
+				<tr>
 			</thead>
-			<tr>
-				<th>点数</th>
-				<td>{{ stats.total_book_count }}</td>
-				<td>{{ stats.this_month_book_count }}</td>
-			</tr>
-			<tr>
-				<th>購入金額</th>
-				<td>{{ stats.total_amount | format_currency:code }}</td>
-				<td>{{ stats.this_month_total_amount | format_currency:code }}</td>
-			</tr>
-			<tr>
-				<th>平均価格</th>
-				<td>{{ stats.average_price | format_currency:code }}</td>
-				<td>{{ stats.this_month_average_price | format_currency:code | default:"-" }}</td>
-			</tr>
+			<tbody>
+				<tr>
+					<th>点数</th>
+					<td>{{ stats.total_book_count }}</td>
+					<td>{{ stats.this_month_book_count }}</td>
+				</tr>
+				<tr>
+					<th>購入金額</th>
+					<td>{{ stats.total_amount | format_currency:code }}</td>
+					<td>{{ stats.this_month_total_amount | format_currency:code }}</td>
+				</tr>
+				<tr>
+					<th>平均価格</th>
+					<td>{{ stats.average_price | format_currency:code | default:"-" }}</td>
+					<td>{{ stats.this_month_average_price | format_currency:code | default:"-" }}</td>
+				</tr>
+			</tbody>
 		</table>
 	{% empty %}
 		入手記録はありません。
@@ -88,14 +96,16 @@
 	</h3>
 
 	<table class="detail-table">
-		<tr>
-			<th>登録冊数</th>
-			<td>{{ total_registered_books }}</td>
-		</tr>
-		<tr>
-			<th>所有済み冊数</th>
-			<td>{{ owned_books_count }}</td>
-		</tr>
+		<tbody>
+			<tr>
+				<th>登録冊数</th>
+				<td>{{ total_registered_books }}</td>
+			</tr>
+			<tr>
+				<th>所有済み冊数</th>
+				<td>{{ owned_books_count }}</td>
+			</tr>
+		</tbody>
 	</table>
 </div>
 

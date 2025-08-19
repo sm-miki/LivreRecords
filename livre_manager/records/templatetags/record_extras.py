@@ -6,12 +6,14 @@ from django.urls import reverse, reverse_lazy
 from django.utils.functional import keep_lazy
 
 from ..models import Book
-from ..currency import CURRENCY_SYMBOLS
+from ..currency import CURRENCY_INFO, CURRENCY_SYMBOLS
 
 register = template.Library()
 
-def format_decimal(value):
-	s = f"{value:,.6f}"
+def format_decimal(value, decimal_digits=None):
+	if decimal_digits is None:
+		decimal_digits = 0
+	s = f"{value:,.{decimal_digits}f}"
 	
 	# 末尾の不要な0を削除する
 	point = s.find('.')
@@ -29,12 +31,17 @@ def format_decimal(value):
 	return s
 
 @register.filter
-def format_currency(amount, currency_code):
+@register.simple_tag
+def format_currency(amount, currency_code, extra_digit=0):
 	if amount is None:
 		return None
 	
-	symbol = CURRENCY_SYMBOLS.get(currency_code, '')
-	return f"{symbol}{format_decimal(amount)}"
+	curr = CURRENCY_INFO.get(currency_code, None)
+	if curr is None:
+		raise ValueError(f"Unknown currency code: {currency_code}")
+	
+	symbol = curr['symbol']
+	return f"{symbol}{format_decimal(amount, decimal_digits=curr['base_decimal_place'] + extra_digit)}"
 
 @register.simple_tag
 def format_price_and_tax(price, net_price, tax, currency_code) -> str:

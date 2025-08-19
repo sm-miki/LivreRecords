@@ -136,19 +136,8 @@
 			</div>
 
 			<div class="text-item">
-				{% if item.price %}
-					税込{{ item.price | format_currency:record.currency_code }}{% comment %}
-					{% endcomment %}{% if item.net_price or item.tax %}（{% endif %}{% comment %}
-					{% endcomment %}{% if item.net_price %}税抜{{ item.net_price | format_currency:record.currency_code }}{% endif %}{% comment %}
-					{% endcomment %}{% if item.net_price and item.tax %} + {% endif %}{% comment %}
-					{% endcomment %}{% if item.tax %}税{{ item.tax | format_currency:record.currency_code }}{% endif %}{% if item.net_price or item.tax %}）{% endif %}
-				{% elif not item.net_price and not item.tax %}
-					&lt;金額未登録&gt;
-				{% else %}
-					税抜{{ item.net_price | format_currency:record.currency_code }}{% comment %}
-					{% endcomment %}{% if item.net_price and item.tax %} + {% endif %}{% comment %}
-					{% endcomment %}{% if item.tax %}税{{ item.tax | format_currency:record.currency_code }}{% endif %}
-				{% endif %}
+				{% format_price_and_tax record.total record.subtotal record.tax record.currency_code as price_str %}
+				{{ price_str | default:"&lt;金額未設定&gt;" }}
 			</div>
 		</div>
 		<div class="inline-flow">

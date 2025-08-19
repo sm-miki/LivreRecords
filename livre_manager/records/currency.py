@@ -6,10 +6,10 @@ JPY = 'JPY'
 USD = 'USD'
 
 CURRENCY_INFO = {
-	'JPY': { 'symbol': '¥', 'label': '円' },
-	'USD': { 'symbol': '$', 'label': '米ドル' },
-	'EUR': { 'symbol': '€', 'label': 'ユーロ' },
-	'GBP': { 'symbol': '£', 'label': 'ポンド' },
+	'JPY': { 'symbol': '¥', 'label': '円', 'base_decimal_place': 0 },
+	'USD': { 'symbol': '$', 'label': '米ドル', 'base_decimal_place': 2 },
+	'EUR': { 'symbol': '€', 'label': 'ユーロ', 'base_decimal_place': 2 },
+	'GBP': { 'symbol': '£', 'label': 'ポンド', 'base_decimal_place': 2 },
 }
 
 CURRENCY_CODE_CHOICES = {
