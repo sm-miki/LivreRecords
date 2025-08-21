@@ -13,6 +13,11 @@ from .unique_id_field import NanoIDField
 from .currency import CURRENCY_CODE_CHOICES, JPY
 from .fuzzy_datetime import FuzzyDatetime
 from .fuzzy_datetime.error import FDError
+from .tzutil import ALL_TIMEZONE_DATA, get_tzinfo, format_utcoffset
+
+TIMEZONE_MAP = {
+	name: d['name_with_offset'] for name, d in ALL_TIMEZONE_DATA.items()
+}
 
 default_date = datetime(1, 1, 1)
 
@@ -45,6 +50,13 @@ class Acquisition(models.Model):
 		blank=True,
 		verbose_name='取得日時（文字列）',
 		help_text='取得日時を文字列で記録'
+	)
+	acquisition_date_tz = models.CharField(
+		max_length=40,
+		choices=TIMEZONE_MAP,
+		default='Asia/Tokyo',
+		verbose_name='取得日時タイムゾーン',
+		help_text='取得日時のタイムゾーン（例: Asia/Tokyo）',
 	)
 	acquisition_date = models.DateTimeField(
 		null=True,
@@ -180,6 +192,24 @@ class Acquisition(models.Model):
 	def payment_method_label(self):
 		return self.PAYMENT_METHOD_CHOICES[self.payment_method]
 	
+	def acquisition_date_info(self):
+		if self.acquisition_date is None:
+			return None
+		
+		tzinfo = get_tzinfo(self.acquisition_date_tz)
+		dt = self.acquisition_date.astimezone(tzinfo)
+		tz_abbr = dt.strftime('%Z')
+		if tz_abbr[0] in ('+', '-'):
+			tz_abbr = 'UTC' + tz_abbr
+		tz_name = tzinfo.tzname(None)
+		tz_offset = format_utcoffset(dt.utcoffset().total_seconds())
+		
+		return {
+			'tz_name': tz_name,
+			'tz_abbr': tz_abbr,
+			'tz_offset': tz_offset,
+		}
+	
 	@property
 	def total_quantity(self):
 		return sum(item.quantity for item in self.items.all())
@@ -190,11 +220,11 @@ class Acquisition(models.Model):
 			try:
 				dt = FuzzyDatetime.parse(self.acquisition_date_str, precision_required='day')
 				try:
-					self.acquisition_date_str = dt.to_string()
+					self.acquisition_date_str = dt.to_string(tz_formats='none')
 				except FDError:
 					pass
 				
-				self.acquisition_date = dt.to_datetime()
+				self.acquisition_date = dt.to_datetime().astimezone(get_tzinfo(self.acquisition_date_tz))
 			except FDError:
 				self.acquisition_date = None
 				raise

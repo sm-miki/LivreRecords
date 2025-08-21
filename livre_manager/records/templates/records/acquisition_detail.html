@@ -7,9 +7,9 @@
 {% block title %}入手記録 {{ record.acquisition_date_str | default:"" }} {{ record.store_name | default:"&lt;店舗未登録&gt;" }}{% endblock %}
 
 {% block breadcrumbs %}
-	<div class="breadcrumbs">
-		<a href="{% url 'records:acquisition_list' %}">↩入手記録一覧に戻る</a>
-	</div>
+<div class="breadcrumbs">
+	<a href="{% url 'records:acquisition_list' %}">↩入手記録一覧に戻る</a>
+</div>
 {% endblock %}
 
 {% block content %}
@@ -19,7 +19,19 @@
 		<div class="item-type-symbol {{ record.acquisition_type }}-acquisition-type">
 			{{ record.acquisition_type_label }}
 		</div>
-		<div class="text-item">{{ record.acquisition_date_str | default:"&lt;日時未登録&gt;" }}</div>
+		{% spaceless %}
+		<div class="text-item">
+			{% if record.acquisition_date %}
+				{{ record.acquisition_date_str }}
+				<span class="hint-line" title="{{ record.acquisition_date_info.tz_name }} [UTC{{ record.acquisition_date_info.tz_offset }}]">
+					{{record.acquisition_date_info.tz_abbr}}
+				</span>
+			{% else %}
+				&lt;日時未登録&gt;
+			{% endif %}
+		</div>
+		{% endspaceless %}
+		<div class="text-delimiter"> –</div>
 		<div class="text-item">{{ record.store_name | default:"&lt;店舗未登録&gt;" }}</div>
 	</div>
 	<div class="inline-flow right-align">
@@ -92,7 +104,7 @@
 計 {{ record.total_quantity }} 点
 
 <div class="item-container">
-{% for item in items %}
+	{% for item in items %}
 	<div class="item-card">
 		<div class="inline">
 			<div class="item-type-symbol {{ item.item_type }}-item-type">
@@ -101,22 +113,22 @@
 
 			{# 書籍項目かつ ISBN がある場合、そのタイトルとリンクを提示する #}
 			{% if item.item_type == "book" and item.item_id %}
-				{% if item.book_record %}
-				{# 既存の書籍レコードがある場合 #}
-					<div class="text-item">
-						<a href="{% url 'records:book_detail' item.book_record.pk %}">{{ item.book_record.title | default:"&lt;書名未登録&gt;" }}</a>
-					</div>
-				{% else %}
-					{# レコードがない場合、書名の代わりに商品説明と新規登録への案内を表示する。 #}
-					<div class="text-item invalid-data">
-						&lt;書籍未登録&gt;
-					</div>
-					<div class="text-item">
-						<a href="{% url 'records:book_new' %}?isbn={{ item.item_id }}&title={{ item.description }}" class="text-item">
-							書籍を登録
-						</a>
-					</div>
-				{% endif %}
+			{% if item.book_record %}
+			{# 既存の書籍レコードがある場合 #}
+			<div class="text-item">
+				<a href="{% url 'records:book_detail' item.book_record.pk %}">{{ item.book_record.title | default:"&lt;書名未登録&gt;" }}</a>
+			</div>
+			{% else %}
+			{# レコードがない場合、書名の代わりに商品説明と新規登録への案内を表示する。 #}
+			<div class="text-item invalid-data">
+				&lt;書籍未登録&gt;
+			</div>
+			<div class="text-item">
+				<a href="{% url 'records:book_new' %}?isbn={{ item.item_id }}&title={{ item.description }}" class="text-item">
+					書籍を登録
+				</a>
+			</div>
+			{% endif %}
 			{% endif %}
 		</div>
 		<div class="inline-flow">
@@ -132,7 +144,7 @@
 		</div>
 		<div class="inline-flow">
 			<div class="text-item">
-				 {{ item.quantity }} 点
+				{{ item.quantity }} 点
 			</div>
 
 			<div class="text-item">
@@ -146,9 +158,9 @@
 			</div>
 		</div>
 	</div>
-{% empty %}
+	{% empty %}
 	<div>書籍または項目が登録されていません。</div>
-{% endfor %}
+	{% endfor %}
 </div>
 
 {% endblock %}

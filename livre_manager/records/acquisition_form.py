@@ -12,7 +12,8 @@ class AcquisitionForm(forms.ModelForm):
 	class Meta:
 		FieldMap = {
 			'acquisition_type': { 'label': '入手方法', 'widget': forms.RadioSelect(attrs={ 'class': 'inline-radio' }) },
-			'acquisition_date_str': { 'label': '入手日時', 'widget': forms.TextInput() },
+			'acquisition_date_str': { 'label': '入手日時', 'widget': forms.TextInput(attrs={ 'placeholder': 'YYYY/mm/dd HH:MM:SS (時間部分は省略可能)' }) },
+			'acquisition_date_tz': { 'label': 'タイムゾーン' },
 			'store_name': { 'label': '店舗名', 'widget': forms.TextInput() },
 			'transaction_number': { 'label': '取引番号', 'widget': forms.TextInput() },
 			'transaction_context': { 'label': 'その他取引情報', 'widget': forms.TextInput() },
@@ -31,16 +32,6 @@ class AcquisitionForm(forms.ModelForm):
 		labels = { name: v['label'] for name, v in FieldMap.items() if 'label' in v }
 		widgets = { name: v['widget'] for name, v in FieldMap.items() if 'widget' in v }
 	
-	# def clean_acquisition_date_str(self):
-	# 	data = self.cleaned_data.get('acquisition_date_str')
-	# 	if data:
-	# 		try:
-	# 			validate_datetime(data)
-	# 		except ValueError:
-	# 			raise ValidationError("不正な日付です。")
-	#
-	# 	return data
-
 ACQUIRED_ITEM_FIELD_MAP = {
 	'item_type': { 'label': '種類' },
 	'item_id': { 'label': '商品・書籍ID(ISBN)', 'widget': forms.TextInput() },

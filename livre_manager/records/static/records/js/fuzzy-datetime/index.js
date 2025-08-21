@@ -4,9 +4,9 @@
  * 日付・日時文字列を、設定可能な精度とゼロパディングで解析・正規化するためのライブラリ。
  */
 
-import { TZ_MAP } from './tz.js';
-
-// --- 定数群 ---
+/*
+ * 定数群
+ */
 
 // --- 正規表現パターン ---
 const dateTimeReg = new RegExp(
@@ -22,9 +22,6 @@ const dateTimeReg = new RegExp(
 					"(?:" +
 						"(?<sep4>[:.-])(?<second>\\d{1,2})" +
 					")?" +
-				")?" +
-				"(?:" +
-					"\\s?(?<tz>[a-zA-Z_]+|(?:UTC)?(?<sign>[+-])(?<offset>(?<hours>\\d{1,2}):(?<minutes>\\d{1,2})|(?<plain_offset>\\d{1,4}))|[a-zA-Z]+/[a-zA-Z_]+)" +
 				")?" +
 			")?" +
 		")?" +
@@ -139,13 +136,12 @@ export function validateDateStr(s, options = {}) {
  * @param {string} s - 入力となる日付時刻文字列。
  * @param {Object} [options={}] - オプション。
  * @param {('year'|'month'|'day'|'hour'|'minute'|'second')} [options.requiredPrecision='year'] - 必要な最小精度。
- * @param {string} [options.defTz='UTC'] - デフォルトのタイムゾーン。
  * @returns {Date} 解析されたDateオブジェクト。
  * @throws {DateTimeError}
  */
 export function parseDateTime(s, options = {}) {
-	const { defTz = 'UTC', requiredPrecision = 'year', acceptMixedSep = true } = options;
-	const { groups, parts, tz } = matchDateTime(s, { requiredPrecision, acceptMixedSep });
+	const { requiredPrecision = 'year', acceptMixedSep = true } = options;
+	const { groups, parts } = matchDateTime(s, { requiredPrecision, acceptMixedSep });
 
 	const utcMillis = Date.UTC(
 		parts.year,
@@ -154,7 +150,7 @@ export function parseDateTime(s, options = {}) {
 		parts.hour,
 		parts.minute,
 		parts.second,
-	) - tz.offsetMins * 60000;
+	);
 	return new Date(utcMillis);
 }
 
@@ -184,8 +180,6 @@ export function parseDate(s, options = {}) {
  * @param {('year'|'month'|'day'|'hour'|'minute'|'second'|null)} [options.minPrecision=null] - 出力が保証される最小精度。nullの場合、入力の精度を維持。
  * @param {string} [options.dateSep='/'] - 日付の区切り文字。
  * @param {string} [options.timeSep=':'] - 時刻の区切り文字。
- * @param {boolean} [options.forceTz=false] - タイムゾーン情報がない場合でもデフォルトTZを付与するか。
- * @param {string} [options.defTz='UTC'] -入力文字列にタイムゾーンが含まれていない場合に試用されるデフォルトタイムゾーン。
  * @param {('year'|'month'|'day'|'hour'|'minute'|'second')} [options.requiredPrecision='year'] - 入力文字列に要求される最小精度を指定します。nullの場合、精度の検証は行われません。
  * @param {boolean} [options.acceptMixedSep=true] - 日付と時刻の区切り文字が混在している場合に許可するかどうか。
  * @returns {string} 正規化された日付時刻文字列。
@@ -197,13 +191,11 @@ export function normalizeDateTime(s, options = {}) {
 		minPrecision = null,
 		dateSep = '/',
 		timeSep = ':',
-		forceTz = false,
-		defTz = 'UTC',
 		requiredPrecision = 'year',
 		acceptMixedSep = true,
 	} = options;
 
-	const { groups: g, parts, precisionIndex: inPrecisionIdx, tz } = matchDateTime(s, { requiredPrecision, acceptMixedSep });
+	const { groups: g, parts, precisionIndex: inPrecisionIdx } = matchDateTime(s, { requiredPrecision, acceptMixedSep });
 
 	// 出力すべき日時精度の決定
 	let outPrecisionIdx = inPrecisionIdx;
@@ -227,10 +219,6 @@ export function normalizeDateTime(s, options = {}) {
 		out += timeSep + (zeroPad ? _pad(parts.minute) : parts.minute);
 	if (outPrecisionIdx >= 5)
 		out += timeSep + (zeroPad ? _pad(parts.second) : parts.second);
-
-	// タイムゾーン
-	if (tz)
-		out += ' ' + tz.label;
 
 	return out;
 }
@@ -358,25 +346,12 @@ function matchDateTime(s, options = {}) {
 	if (parts.second < 0 || parts.second > 59)
 		throw new InvalidValueError(`Second out of range: ${parts.second}`, { input: s, second: parts.second });
 
-	// タイムゾーンの検証
-	let tz = null;
-	if (g.tz) {
-		try {
-			tz = parseTz(g);
-		} catch (e) {
-			if (e instanceof InvalidFormatError) {
-				throw new InvalidTimezoneError(`Invalid timezone format: "${g.tz}"`, { input: s, tz: g.tz });
-			}
-			throw e;
-		}
-	}
 
 	return {
 		groups: g,
 		parts,
 		precisionIndex: inPrecisionIdx,
 		precision: dateTimePrecisionOrder[inPrecisionIdx],
-		tz,
 	};
 }
 
@@ -430,62 +405,4 @@ function matchDate(s, options = {}) {
 		throw new InvalidValueError(`Invalid day value ${parts.day} in "${s}"`, { input: s, day: parts.day });
 
 	return { groups: g, parts, precisionIndex: inPrecisionIdx, precision: datePrecisionOrder[inPrecisionIdx] };
-}
-
-/**
- * テキストからのタイムゾーン表記を解析し、標準化されたオフセット文字列と分単位のオフセットを返します。
- * @param {string} s - 生のタイムゾーン（例: 'Z', 'UTC', 'JST', '+09:00' など）
- * @param {string} [options.defTz='UTC'] - デフォルトのタイムゾーン
- * @returns {Object} タイムゾーンオフセットの文字列と分単位のオフセット
- * @throws {Error} 不明なフォーマット
- */
-function parseTz(g, options = {}) {
-	const { defTz = 'UTC', forceTz = false } = options;
-
-	let tz = (g.tz || defTz).toUpperCase();
-	if (tz === 'Z') {
-		tz = 'UTC';
-		return { type: 'z', label: tz, ... TZ_MAP[tz]};
-	}
-	if (TZ_MAP[tz])
-		return { type: 'abbr', label: tz, ...TZ_MAP[tz] };
-
-	// +HH:MM／-HHMM 形式のパース
-	if (g.offset) {
-		let h, mm;
-		if (g.plain_offset) {
-			// HHMM 形式
-			let po = g.plain_offset;
-			switch (po.length) {
-			case 1:	// H
-			case 2:	// HH
-				h = po;
-				mm = '0';
-				break;
-			case 3: // HMM
-				h = po.slice(0, 1);
-				mm = po.slice(1, 3);
-				break;
-			case 4: // HHMM
-				h = po.slice(0, 2);
-				mm = po.slice(2, 4);
-				break;
-			}
-		} else {
-			h = g.hours;
-			mm = g.minutes;
-		}
-		const sign = g.sign;
-		const offsetStr = `${sign}${h.padStart(2, '0')}:${mm.padStart(2, '0')}`
-		const offsetMins = parseInt(h, 10) * 60 + parseInt(mm, 10);
-
-		return {
-			type: 'offset',
-			label: offsetStr,
-			offsetStr,
-			offsetMins: sign == '-' ? -offsetMins : offsetMins,
-		};
-	}
-
-	throw new InvalidFormatError(`Unknown timezone format: "${s}"`, { input: s });
 }

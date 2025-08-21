@@ -293,7 +293,7 @@ class FuzzyDatetime:
 			precision_required: str | DatePrecision = 'year',
 			same_date_sep=False,
 			same_time_sep=False,
-			allowed_tz_formats: Optional[Set[str]] = None,
+			allowed_tz_formats: Optional[str | Set[str]] = None,
 	) -> 'FuzzyDatetime':
 		"""
 		日時文字列を解析し、FuzzyDatetimeオブジェクトを生成する。
@@ -318,6 +318,8 @@ class FuzzyDatetime:
 		"""
 		if allowed_tz_formats is None:
 			allowed_tz_formats = { 'none', 'name', 'abbr', 'z', '+hh:mm', '+hhmm', 'utc+hh:mm', 'utc+hhmm' }
+		elif isinstance(allowed_tz_formats, str):
+			allowed_tz_formats = set([allowed_tz_formats])
 		else:
 			allowed_tz_formats = set(allowed_tz_formats)
 		

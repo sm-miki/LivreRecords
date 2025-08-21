@@ -30,9 +30,16 @@
 				{{ record.acquisition_type_label }}
 			</div>
 			<div class="text-item">
+				{% spaceless %}
 				<a href="{% url 'records:acquisition_detail' record.id %}">
-					{{ record.acquisition_date_str | default:"&lt;日時未登録&gt;" }} {{ record.store_name |default:"&lt;店舗未登録&gt;" }}
+					{% if record.acquisition_date %}
+						{{ record.acquisition_date_str }} {{record.acquisition_date_info.tz_abbr}}
+					{% else %}
+						&lt;日時未登録&gt;
+					{% endif %}
+					 – {{ record.store_name |default:"&lt;店舗未登録&gt;" }}
 				</a>
+				{% endspaceless %}
 			</div>
 		</div>
 		<div class="inline-flow">
