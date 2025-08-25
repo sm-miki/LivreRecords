@@ -38,7 +38,7 @@
 				</div>
 				<div class="text-item">
 					<a href="{% url 'records:acquisition_detail' record.id %}">
-						{{ record.acquisition_date_str | default:"&lt;日時未登録&gt;" }} {{ record.store_name |default:"&lt;店舗未登録&gt;" }}
+						{{ record.acquisition_date_str | default:"(日時未登録)" }} {{ record.store_name |default:"(店舗未登録)" }}
 					</a>
 				</div>
 			</div>
@@ -51,7 +51,7 @@
 				<div class="text-item">
 					{{ record.total_quantity }}点
 					{% format_price_and_tax record.total record.subtotal record.tax record.currency_code as price_str %}
-					{{ price_str | default:"&lt;金額未設定&gt;" }}
+					{{ price_str | default:"(金額未設定)" }}
 				</div>
 			</div>
 			<div class="inline-flow card-control">
@@ -89,7 +89,7 @@
 					<div class="inline-flow">
 						<div class=".text-item">
 							<a href="{% url 'records:book_detail' record.id %}">
-								{{ record.title | default:"&lt;書名未登録&gt;" }}{% if record.series %}（{{ record.series | default:"-" }}）{% endif %}
+								{{ record.title | default:"(書名未登録)" }}{% if record.series %}（{{ record.series | default:"-" }}）{% endif %}
 							</a>
 						</div>
 					</div>
@@ -106,7 +106,7 @@
 					</div>
 					<div class="inline-flow">
 						<div class="text-item">
-							{{ record.publisher | default:"&lt;出版社未登録&gt;" }}（{{ record.publication_date_str | default:"&lt;発売日未登録&gt;" }}）
+							{{ record.publisher | default:"(出版社未登録)" }}（{{ record.publication_date_str | default:"(発売日未登録)" }}）
 						</div>
 					</div>
 					<div class="inline-flow">
@@ -145,7 +145,7 @@
 					<div class="inline-flow">
 						<div class=".text-item">
 							<a href="{% url 'records:book_detail' record.id %}">
-								{{ record.title | default:"&lt;書名未登録&gt;" }}{% if record.series %}（{{ record.series | default:"-" }}）{% endif %}
+								{{ record.title | default:"(書名未登録)" }}{% if record.series %}（{{ record.series | default:"-" }}）{% endif %}
 							</a>
 						</div>
 					</div>
@@ -162,7 +162,7 @@
 					</div>
 					<div class="inline-flow">
 						<div class="text-item">
-							{{ record.publisher | default:"&lt;出版社未登録&gt;" }}（{{ record.publication_date_str | default:"&lt;発売日未登録&gt;" }}）
+							{{ record.publisher | default:"(出版社未登録)" }}（{{ record.publication_date_str | default:"(発売日未登録)" }}）
 						</div>
 					</div>
 					<div class="inline-flow">

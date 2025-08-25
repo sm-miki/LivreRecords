@@ -2,7 +2,7 @@
 {% load static %}
 {% load record_extras %}
 
-{% block title %}{{ record.title | default:"&lt;書名未登録&gt;" }}{% endblock %}
+{% block title %}{{ record.title | default:"(書名未登録)" }}{% endblock %}
 
 {% block breadcrumbs %}
 	<div class="breadcrumbs">
@@ -59,7 +59,7 @@
 
 		<div class="inline-flow">
 			<div class="text-item">
-				{{ record.publisher | default:"&lt;出版社未登録&gt;" }}（{{ record.publication_date_str | default:"&lt;発売日未登録&gt;" }}）
+				{{ record.publisher | default:"(出版社未登録)" }}（{{ record.publication_date_str | default:"(発売日未登録)" }}）
 			</div>
 		</div>
 

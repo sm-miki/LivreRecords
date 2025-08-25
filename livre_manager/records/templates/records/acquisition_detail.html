@@ -4,7 +4,7 @@
 {% load static %}
 {% load record_extras %}
 
-{% block title %}入手記録 {{ record.acquisition_date_str | default:"" }} {{ record.store_name | default:"&lt;店舗未登録&gt;" }}{% endblock %}
+{% block title %}入手記録 {{ record.acquisition_date_str | default:"" }} {{ record.store_name | default:"(店舗未登録)" }}{% endblock %}
 
 {% block breadcrumbs %}
 <div class="breadcrumbs">
@@ -27,12 +27,12 @@
 					{{record.acquisition_date_info.tz_abbr}}
 				</span>
 			{% else %}
-				&lt;日時未登録&gt;
+				(日時未登録)
 			{% endif %}
 		</div>
 		{% endspaceless %}
 		<div class="text-delimiter"> –</div>
-		<div class="text-item">{{ record.store_name | default:"&lt;店舗未登録&gt;" }}</div>
+		<div class="text-item">{{ record.store_name | default:"(店舗未登録)" }}</div>
 	</div>
 	<div class="inline-flow right-align">
 		<button type="submit" class="btn-primary" onclick="location.href='{% url 'records:acquisition_edit' record.pk %}'">
@@ -116,12 +116,12 @@
 			{% if item.book_record %}
 			{# 既存の書籍レコードがある場合 #}
 			<div class="text-item">
-				<a href="{% url 'records:book_detail' item.book_record.pk %}">{{ item.book_record.title | default:"&lt;書名未登録&gt;" }}</a>
+				<a href="{% url 'records:book_detail' item.book_record.pk %}">{{ item.book_record.title | default:"(書名未登録)" }}</a>
 			</div>
 			{% else %}
 			{# レコードがない場合、書名の代わりに商品説明と新規登録への案内を表示する。 #}
 			<div class="text-item invalid-data">
-				&lt;書籍未登録&gt;
+				(書籍未登録)
 			</div>
 			<div class="text-item">
 				<a href="{% url 'records:book_new' %}?isbn={{ item.item_id }}&title={{ item.description }}" class="text-item">
@@ -132,7 +132,7 @@
 			{% endif %}
 		</div>
 		<div class="inline-flow">
-			<div class="text-item"><span class="label">説明: </span>{{ item.description }}</div>
+			<div class="text-item"><span class="label">説明: </span>{{ item.description | default:"-" }}</div>
 		</div>
 		<div class="inline-flow">
 			<div class="text-item">
@@ -149,7 +149,7 @@
 
 			<div class="text-item">
 				{% format_price_and_tax record.total record.subtotal record.tax record.currency_code as price_str %}
-				{{ price_str | default:"&lt;金額未設定&gt;" }}
+				{{ price_str | default:"(金額未設定)" }}
 			</div>
 		</div>
 		<div class="inline-flow">
