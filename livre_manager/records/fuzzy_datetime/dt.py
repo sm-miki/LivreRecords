@@ -4,7 +4,7 @@ fuzzy_datetime.dt
 """
 from typing import Sequence, Set, Optional
 import re
-from datetime import datetime, date, timedelta, tzinfo as t_tzinfo
+from datetime import datetime, date, timedelta
 import calendar
 
 from .tz import FlexiTimezone
@@ -820,38 +820,6 @@ class FuzzyDatetime:
 			precision=self._precision,
 		)
 	
-	# def cmp(self, other):
-	# 	"""
-	# 	FuzzyDatetimeオブジェクトを他のFuzzyDatetimeオブジェクトと比較する。
-	#
-	# 	Args:
-	# 		other (FuzzyDatetime | datetime): 比較対象のFuzzyDatetimeオブジェクト。
-	#
-	# 	Returns:
-	# 		int: 比較結果。0なら等しい、1ならselfが大きい、-1ならselfが小さい。
-	# 	"""
-	# 	if isinstance(other, datetime):
-	# 		min_precision = self._precision
-	# 	elif isinstance(other, FuzzyDatetime):
-	# 		min_precision = min(self._precision, other.precision)
-	# 	else:
-	# 		return NotImplemented
-	#
-	# 	# タイムゾーンをそろえる
-	# 	if self._tzinfo:
-	# 		if other.tzinfo:
-	# 			self_dt = self.to_datetime()
-	# 			other_dt = other.to_datetime()
-	# 		else:
-	# 			self_dt = self.to_datetime()
-	# 			other_dt = other.to_datetime().astimezone(self._tzinfo)
-	# 	else:
-	# 		if other.tzinfo:
-	# 			self_dt = self.to_datetime().astimezone(other.tzinfo)
-	# 			other_dt = other.to_datetime()
-	# 		else:
-	# 			self_dt = self.to_datetime()
-	# 			other_dt = other.to_datetime()
 
 # --- 内部関数 ---
 
@@ -866,48 +834,3 @@ def _pad(val: int, length: int = 2) -> str:
 		 str: ゼロパディングされた文字列。
 	"""
 	return str(val).zfill(length)
-
-# def get_tz_abbr(tzinfo: t_tzinfo | FlexiTimezone) -> str | None:
-# 	"""
-# 	タイムゾーン情報から略称を取得します。
-# 
-# 	Args:
-# 		tzinfo (datetime.tzinfo | FlexiTimezone): タイムゾーン情報。
-# 
-# 	Returns:
-# 		str | None: タイムゾーンの略称。略称が存在しない場合は None を返します。
-# 
-# 	Raises:
-# 		TypeError: 引数が FlexiTimezone でも tzinfo でもない場合。
-# 	"""
-# 	if isinstance(tzinfo, FlexiTimezone):
-# 		return tzinfo.abbreviation
-# 	elif isinstance(tzinfo, t_tzinfo):
-# 		return None
-# 	else:
-# 		raise TypeError(f"Expected FlexiTimezone or tzinfo, got {type(tzinfo)}")
-# 
-# def format_tz_offset(
-# 		tzinfo: datetime.tzinfo | FlexiTimezone,
-# 		dt: datetime | FuzzyDatetime,
-# 		utc_prefix=False,
-# 		separator=':'
-# ) -> str:
-# 	"""
-# 	タイムゾーン情報からオフセットを文字列形式で取得します。
-# 
-# 	Args:
-# 		tzinfo (tzinfo | FlexiTimezone): タイムゾーン情報。
-# 
-# 	Returns:
-# 		str: タイムゾーンのオフセット文字列。例: '+09:00', '-05:00' など。
-# 
-# 	Raises:
-# 		TypeError: 引数が FlexiTimezone でも tzinfo でもない場合。
-# 	"""
-# 	if isinstance(tzinfo, FlexiTimezone):
-# 		return tzinfo.format_offset(utc_prefix=utc_prefix, separator=separator)
-# 	elif isinstance(tzinfo, t_tzinfo):
-# 		return 'UTC'  # デフォルトのUTCオフセット
-# 	else:
-# 		raise TypeError(f"Expected FlexiTimezone or tzinfo, got {type(tzinfo)}")
