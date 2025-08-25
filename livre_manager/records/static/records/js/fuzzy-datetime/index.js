@@ -26,7 +26,7 @@ const dateTimeReg = new RegExp(
 			")?" +
 		")?" +
 	")?$"
-)
+);
 const dateReg = /^(?<year>\d{4})(?:(?<sep1>[-\/.])(?<month>\d{1,2})(?:(?<sep2>[-\/.])(?<day>\d{1,2}))?)?$/;
 
 const dateTimePrecisionOrder = ['year', 'month', 'day', 'hour', 'minute', 'second'];
