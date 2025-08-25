@@ -1,4 +1,4 @@
-from typing import Union, Sequence
+from typing import Sequence, Optional
 import os
 import numpy as np
 
@@ -10,7 +10,7 @@ import easyocr
 class EasyOCREngine(BaseOCREngine):
 	def __init__(
 			self,
-			lang_list: Union[Sequence[str] | None] = None,
+			lang_list: Optional[Sequence[str]] = None,
 			link_threshold=0.3,
 			max_image_size=2048,
 			gpu=False,

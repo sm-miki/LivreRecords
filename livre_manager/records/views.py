@@ -1,7 +1,7 @@
 """
 records/views.py
 """
-from typing import Union
+from typing import Optional
 from django.db import transaction
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse, reverse_lazy
@@ -266,7 +266,7 @@ class BookEditView(TemplateView):
 	"""
 	template_name = 'records/book_edit.html'
 	
-	def get(self, request, pk: Union[str, None] = None, *args, **kwargs):
+	def get(self, request, pk: Optional[str] = None, *args, **kwargs):
 		if pk:
 			# 既存レコードの再編集
 			is_new_record = False

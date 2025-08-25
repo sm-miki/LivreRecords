@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional
 import numpy as np
 import cv2
 from PIL import Image, ImageFont
@@ -27,7 +27,7 @@ def cv2pil(image):
 	return new_image
 
 def get_font(
-		font_path: Union[str | None] = None,
+		font_path: Optional[str] = None,
 		size=10
 ) -> ImageFont:
 	try:

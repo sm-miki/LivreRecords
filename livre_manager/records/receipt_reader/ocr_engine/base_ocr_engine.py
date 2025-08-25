@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional
 from abc import ABCMeta, abstractmethod
 import numpy as np
 import cv2
@@ -44,7 +44,7 @@ class OCRResult:
 class BaseOCREngine(metaclass=ABCMeta):
 	@abstractmethod
 	def recognize_text(
-			self, image: Union[PILImage | np.ndarray]
+			self, image: PILImage | np.ndarray
 	) -> list[OCRTextBlock]:
 		"""OCRを使って指定された画像から文字列とその位置情報を抽出します。
 		
@@ -57,10 +57,10 @@ class BaseOCREngine(metaclass=ABCMeta):
 		pass
 	
 	def render_text_blocks(self,
-			image: Union[PILImage | np.ndarray],
+			image: PILImage | np.ndarray,
 			text_list: list[OCRTextBlock],
-			font_path: Union[str | None] = None
-	) -> Union[PILImage | np.ndarray]:
+			font_path: Optional[str] = None
+	) -> PILImage | np.ndarray:
 		"""読み取った文字を画像中に描画する。
 		
 		Args:
@@ -113,7 +113,7 @@ class BaseOCREngine(metaclass=ABCMeta):
 	def preprocess(
 			self,
 			image: np.ndarray,
-			preprocess_types: Union[str | tuple[str] | None] = None
+			preprocess_types: Optional[str | tuple[str]] = None
 	) -> np.ndarray:
 		"""画像の前処理
 		
@@ -159,7 +159,7 @@ class BaseOCREngine(metaclass=ABCMeta):
 		return cv2.cvtColor(image.clip(0, 255).astype(np.uint8), cv2.COLOR_GRAY2BGR)
 	
 	def recognize(self,
-			image, preprocess_type: Union[str | tuple[str] | None] = None
+			image, preprocess_type: Optional[str | tuple[str]] = None
 	) -> OCRResult:
 		"""
 		

@@ -1,6 +1,6 @@
 import io
 from collections import deque
-from typing import Union
+from typing import Optional
 import cv2
 import numpy as np
 import re
@@ -69,7 +69,7 @@ class ReadResult:
 	
 	def render_text_overlay(
 			self, /,
-			font_path: Union[str | None] = None,
+			font_path: Optional[str] = None,
 			border_color1=(0, 255, 0),
 			border_color2=(0, 51, 255),
 			text_color=(255, 17, 102),
@@ -116,7 +116,7 @@ class ReadResult:
 		return pil2cv(image)
 
 def get_font(
-		font_path: Union[str | None] = None,
+		font_path: Optional[str] = None,
 		size=10
 ) -> ImageFont:
 	try:
@@ -139,7 +139,7 @@ class ReceiptReader:
 	
 	def read_receipt(self,
 			image,
-			preprocess_type: Union[str | list[str] | list[tuple[str, dict]] | None] = None
+			preprocess_type: Optional[str | list[str] | list[tuple[str, dict]]] = None
 	) -> ReadResult:
 		"""画像から文字を読み取る"""
 		if image is None:
