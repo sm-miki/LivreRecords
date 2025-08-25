@@ -38,6 +38,13 @@ a:hover {
 }
 
 /*
+ * Text Decoration
+ */
+.hint-text {
+	cursor: help;
+}
+
+/*
  * Inline Structures
  */
 .inline {

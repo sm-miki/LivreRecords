@@ -23,7 +23,7 @@
 		<div class="text-item">
 			{% if record.acquisition_date %}
 				{{ record.acquisition_date_str }}
-				<span class="hint-line" title="{{ record.acquisition_date_info.tz_name }} [UTC{{ record.acquisition_date_info.tz_offset }}]">
+				<span class="hint-text" title="{{ record.acquisition_date_info.tz_name }} [UTC{{ record.acquisition_date_info.tz_offset }}]">
 					{{record.acquisition_date_info.tz_abbr}}
 				</span>
 			{% else %}
