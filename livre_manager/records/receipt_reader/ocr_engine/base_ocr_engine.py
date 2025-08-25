@@ -9,6 +9,22 @@ from PIL.Image import Image as PILImage
 from .img_utils import pil2cv, cv2pil, get_font
 from .image_correction import crop_receipt, closing, gamma_correction, greyscale, unsharp_masking
 
+
+def _resize_image_if_large(image: np.ndarray, max_dimension: int = 2000) -> np.ndarray:
+	"""
+	Resizes an image if its largest dimension exceeds max_dimension, preserving aspect ratio.
+
+	Args:
+		image: The input image as a NumPy array.
+		max_dimension: The maximum size for either width or height.
+	"""
+	h, w = image.shape[:2]
+	if max(h, w) > max_dimension:
+		scale = max_dimension / max(h, w)
+		new_w, new_h = int(w * scale), int(h * scale)
+		return cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+	return image
+
 class OCRTextBlock:
 	def __init__(self,
 			text: str,
@@ -171,6 +187,9 @@ class BaseOCREngine(metaclass=ABCMeta):
 
 		"""
 		original = image.copy()
+		# To prevent memory exhaustion and improve performance, resize large images first.
+		image = _resize_image_if_large(image)
+
 		image = self.preprocess(image, preprocess_type)  # データの前処理 (処理内容は設定による)
 		
 		texts: list[OCRTextBlock] = self.recognize_text(image)  # 文字の読み取り
