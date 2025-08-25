@@ -32,10 +32,10 @@ def _init():
 	utc = pytz.utc
 	# Pick two dates to check standard and DST offsets.
 	dt_picked = [
-		datetime(2020, 3, 1, 0, 0, tzinfo=utc),
-		datetime(2020, 6, 1, 0, 0, tzinfo=utc),
-		datetime(2020, 9, 1, 0, 0, tzinfo=utc),
-		datetime(2020, 12, 1, 0, 0, tzinfo=utc),
+		datetime(2020, 2, 15, 12, 0, tzinfo=utc),
+		datetime(2020, 5, 15, 12, 0, tzinfo=utc),
+		datetime(2020, 8, 15, 12, 0, tzinfo=utc),
+		datetime(2020, 11, 15, 12, 0, tzinfo=utc),
 	]
 	
 	entries = []  # tuples of (name, standard_offset_timedelta, dst_offset_timedelta)
