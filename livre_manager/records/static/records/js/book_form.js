@@ -26,7 +26,7 @@ import { normalizeDate, InvalidFormatError, InvalidValueError, PrecisionError, I
 		}
 	}
 
-	window.addEventListener('DOMContentLoaded', function() {
+	window.addEventListener('DOMContentLoaded', function () {
 		// 入手日時の入力欄とエラー表示用要素、Submit ボタンを取得
 		const form = document.querySelector('form');
 		const publicationDateInput = document.getElementById('id_publication_date_str');
@@ -44,7 +44,7 @@ import { normalizeDate, InvalidFormatError, InvalidValueError, PrecisionError, I
 		});
 
 		// ページ離脱時の確認ダイアログ
-		window.addEventListener('beforeunload', function(e) {
+		window.addEventListener('beforeunload', function (e) {
 			if (formModified) {
 				// ブラウザのデフォルトの確認メッセージを表示
 				e.preventDefault();
@@ -117,7 +117,7 @@ import { normalizeDate, InvalidFormatError, InvalidValueError, PrecisionError, I
 		}
 
 		// フォーム送信時にチェック
-		form.addEventListener('submit', function(e) {
+		form.addEventListener('submit', function (e) {
 			// 送信前に最終チェック
 			if (validate() /* || 他のエラー */) {
 				// エラーが発生したため送信キャンセル
@@ -127,8 +127,8 @@ import { normalizeDate, InvalidFormatError, InvalidValueError, PrecisionError, I
 				[...errors][0][1][1].focus();
 
 				// メッセージボックスを表示
-//				errorSummary = [...errors].map(([k, [msg, focusBody]]) => msg).join('\n');
-//				alert(errorSummary);
+				//				errorSummary = [...errors].map(([k, [msg, focusBody]]) => msg).join('\n');
+				//				alert(errorSummary);
 			} else {
 				// エラーがない場合、フォームが送信されるので formModified を false に設定
 				formModified = false;

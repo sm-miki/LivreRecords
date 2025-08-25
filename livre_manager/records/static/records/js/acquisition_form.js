@@ -1,7 +1,5 @@
 /* static/js/acquisition_form.js */
 
-						// 精度エラー
-						// 精度エラー
 import { normalizeDateTime, InvalidFormatError, InvalidValueError, PrecisionError, InvalidTimezoneError } from './fuzzy-datetime/index.js';
 
 (() => {

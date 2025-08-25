@@ -2,7 +2,7 @@ function openTab(evt, tabName) {
 	var i, tabcontent, tablinks;
 	tabcontent = document.getElementsByClassName("tab-content");
 
- 	// すべてのタブコンテンツを非表示にする
+	// すべてのタブコンテンツを非表示にする
 	for (i = 0; i < tabcontent.length; i++) {
 		tabcontent[i].style.display = "none";
 	}
@@ -14,16 +14,16 @@ function openTab(evt, tabName) {
 	evt.currentTarget.className += " active";
 
 	// URLのハッシュを更新 (ブラウザの履歴には追加しない)
- 	if (evt.isTrusted) {
- 		if (history.replaceState) {
- 			history.replaceState(null, null, '#' + tabName);
- 		} else {
- 			location.hash = '#' + tabName;
- 		}
- 	}
+	if (evt.isTrusted) {
+		if (history.replaceState) {
+			history.replaceState(null, null, '#' + tabName);
+		} else {
+			location.hash = '#' + tabName;
+		}
+	}
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 	// URLのハッシュに基づいて表示するタブを決定する
 	const hash = window.location.hash.substring(1);
 	let buttonToClick = null;
