@@ -187,6 +187,9 @@ class ReceiptReader:
 		Returns:
 
 		"""
+		if len(text_blocks) == 0:
+			return []
+		
 		# size: [n, 4, 2]
 		order = np.argsort([bbox[0][0] + bbox[3][0] for bbox in map(lambda block: block.bbox, text_blocks)])
 		
