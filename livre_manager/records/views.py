@@ -252,10 +252,23 @@ def book_detail(request, pk: str, id_type=None):
 		record = get_object_or_404(Book, pk=pk)
 	
 	authors = record.authors.all()
+	
+	# この書籍を含む入手記録を取得
+	related_acquisitions = []
+	if record.isbn:
+		acquisition_ids = AcquiredItem.objects.filter(
+			item_type='book',
+			item_id=record.isbn
+		).values_list('acquisition_id', flat=True).distinct()
+		related_acquisitions = Acquisition.objects.filter(
+			pk__in=acquisition_ids
+		).order_by('-acquisition_date')
+	
 	context = {
 		'record': record,
 		'authors': authors,
 		'book_id': pk,
+		'related_acquisitions': related_acquisitions,
 	}
 	return render(request, 'records/book_detail.html', context=context)
 

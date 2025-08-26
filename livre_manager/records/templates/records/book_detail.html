@@ -5,101 +5,132 @@
 {% block title %}{{ record.title | default:"(書名未登録)" }}{% endblock %}
 
 {% block breadcrumbs %}
-	<div class="breadcrumbs">
-		<a href="{% url 'records:book_list' %}">↩書籍一覧に戻る</a>
-	</div>
+<div class="breadcrumbs">
+	<a href="{% url 'records:book_list' %}">↩書籍一覧に戻る</a>
+</div>
 {% endblock %}
 
 {% block content %}
 
-<div class="horizontal-panes">
+<div class="wide-horizontal-panes">
 	<div class="pane cover-frame">
 		{# カバー画像 #}
 		{% if record.cover_image %}
-		 <img src="{{ record.cover_image.url }}" alt="書籍カバー画像">
+			<img src="{{ record.cover_image.url }}" alt="書籍カバー画像">
 		{% else %}
-		 <img src="{% static 'records/images/no_image.png' %}" alt="画像なし">
+			<img src="{% static 'records/images/no_image.png' %}" alt="画像なし">
 		{% endif %}
 	</div>
 	<div class="fill-pane">
-		<div class="inline-flow content-header">
-			<div>
-				<div class="content-title">{{ record.title }}</div>
-				{% if record.series %}
-					<div class="item-title">
-						{{ record.series }}
+		<div class="section-stack">
+			<div class="stack">
+				<div class="inline-flow content-header">
+					<div>
+						<div class="content-title">{{ record.title }}</div>
+						{% if record.series %}
+						<div class="item-title">
+							{{ record.series }}
+						</div>
+						{% endif %}
+					</div>
+					<div class="inline-flow right-align">
+						<button type="submit" class="btn-primary" onclick="location.href='{% url 'records:book_edit' record.pk %}'">
+							編集
+						</button>
+						<form action="{% url 'records:book_delete' record.pk %}" method="post" style="display: inline;">
+							{% csrf_token %}
+							<button type="submit" class="btn btn-danger" onclick="return confirm('本当にこの書籍情報を削除しますか？ この操作は取り消せません。');">
+								削除
+							</button>
+						</form>
+					</div>
+				</div>
+
+				{# 著者リスト #}
+				<div class="inline-flow">
+					<div class="text-item">
+						{% if record.authors.all %}
+							{% for author in record.authors.all %}
+								{{ author.author_name }}{% if author.role %}（{{ author.role }}）{% endif %}{% if not forloop.last %}、{% endif %}
+							{% endfor %}
+						{% else %}
+							-
+						{% endif %}
+					</div>
+				</div>
+
+				<div class="inline-flow">
+					<div class="text-item">
+						{{ record.publisher | default:"(出版社未登録)" }}（{{ record.publication_date_str | default:"(発売日未登録)" }}）
+					</div>
+				</div>
+
+				<div class="inline-flow">
+					<div class="text-item">
+						<span class="label">定価: </span>{{ record.price | format_currency:record.currency_code | default:"価格未登録" }}
+					</div>
+				</div>
+
+				{% if record.isbn %}
+					<div class="inline-flow">
+						<div class="text-item">
+							<span class="label">ISBN: </span>{{ record.isbn }}
+						</div>
+					</div>
+				{% endif %}
+
+				{% if record.jan %}
+					<div class="inline-flow">
+						<div class="text-item">
+							<span class="label">JAN: </span>{{ record.jan }}
+						</div>
+					</div>
+				{% endif %}
+
+				{% if record.asin %}
+					<div class="inline-flow">
+						<div class="text-item">
+							<span class="label">ASIN: </span>{{ record.asin }}
+						</div>
+					</div>
+				{% endif %}
+
+				{% if record.user_memo %}
+					<div class="inline-flow">
+						<div class="text-item">
+							<span class="label">メモ: </span>{{ record.user_memo }}
+						</div>
 					</div>
 				{% endif %}
 			</div>
-			<div class="inline-flow right-align">
-				<button type="submit" class="btn-primary" onclick="location.href='{% url 'records:book_edit' record.pk %}'">
-					編集
-				</button>
-				<form action="{% url 'records:book_delete' record.pk %}" method="post" style="display: inline;">
-					{% csrf_token %}
-					<button type="submit" class="btn btn-danger" onclick="return confirm('本当にこの書籍情報を削除しますか？ この操作は取り消せません。');">
-						削除
-					</button>
-				</form>
-			</div>
-		</div>
 
-		{# 著者リスト #}
-		<div class="inline-flow">
-			<div class="text-item">
-				{% if record.authors.all %}
-					{% for author in record.authors.all %}
-					{{ author.author_name }}{% if author.role %}（{{ author.role }}）{% endif %}{% if not forloop.last %}、{% endif %}
+			<div class="content-section">
+				<h3>入手記録</h3>
+				{% if related_acquisitions %}
+					{% for acq in related_acquisitions %}
+						<div class="inline">
+							<div class="item-type-symbol {{ acq.acquisition_type }}-acquisition-type">
+								{{ acq.acquisition_type_label }}
+							</div>
+							<div class="text-item">
+								{% spaceless %}
+								<a href="{% url 'records:acquisition_detail' acq.id %}">
+									{% if acq.acquisition_date %}
+										{{ acq.acquisition_date_str }} {{acq.acquisition_date_info.tz_abbr}}
+									{% else %}
+										(日時未登録)
+									{% endif %}
+									 – {{ acq.store_name |default:"(店舗未登録)" }}
+								</a>
+								{% endspaceless %}
+							</div>
+						</div>
 					{% endfor %}
 				{% else %}
-					-
+					<p>この書籍の入手記録はありません。</p>
 				{% endif %}
 			</div>
 		</div>
-
-		<div class="inline-flow">
-			<div class="text-item">
-				{{ record.publisher | default:"(出版社未登録)" }}（{{ record.publication_date_str | default:"(発売日未登録)" }}）
-			</div>
-		</div>
-
-		<div class="inline-flow">
-			<div class="text-item">
-				<span class="label">定価: </span>{{ record.price | format_currency:record.currency_code | default:"価格未登録" }}
-			</div>
-		</div>
-
-		{% if record.isbn %}
-		<div class="inline-flow">
-			<div class="text-item">
-				<span class="label">ISBN: </span>{{ record.isbn }}
-			</div>
-		</div>
-		{% endif %}
-
-		{% if record.jan %}
-		<div class="inline-flow">
-			<div class="text-item">
-				<span class="label">JAN: </span>{{ record.jan }}
-			</div>
-		</div>
-		{% endif %}
-
-		{% if record.asin %}
-		<div class="inline-flow">
-			<div class="text-item">
-				<span class="label">ASIN: </span>{{ record.asin }}
-			</div>
-		</div>
-		{% endif %}
-
-		{% if record.user_memo %}
-		<div class="inline-flow">
-			<div class="text-item">
-				<span class="label">メモ: </span>{{ record.user_memo }}
-			</div>
-		</div>
-		{% endif %}
 	</div>
 </div>
 

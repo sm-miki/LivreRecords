@@ -47,7 +47,7 @@
 	</div>
 </div>
 
-<div class="horizontal-panes">
+<div class="wide-horizontal-panes">
 	<div class="pane">
 		<div class="receipt-image-frame">
 			{# レシート画像 #}
@@ -159,7 +159,9 @@
 		</div>
 	</div>
 	{% empty %}
-	<div>書籍または項目が登録されていません。</div>
+	<div class="item-card">
+		書籍または項目が登録されていません。
+	</div>
 	{% endfor %}
 </div>
 

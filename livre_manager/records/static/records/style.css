@@ -38,11 +38,22 @@ a:hover {
 }
 
 /*
- * Text Decoration
+ * Text Decorations
  */
 .hint-text {
 	cursor: help;
 }
+
+.text-delimiter {
+	color: #888;
+}
+.invalid-data {
+	color: #666;
+}
+.label {
+	display: inline;
+}
+
 
 /*
  * Inline Structures
@@ -88,6 +99,7 @@ a:hover {
 .header {
 	padding: 5px 0em 5px 0em;
 	display: flex;
+	flex-wrap: wrap;
 	flex-direction: row;
 	align-items: flex-end;
 }
@@ -120,7 +132,7 @@ a:hover {
  */
 .content {
 	margin: 0px 0em 0px 0em;
-	padding: 15px 20px 15px 20px;
+	padding: 1.5em 1.3em;
 	background-color: #ffffff;
 	border-radius: 10px;
 	display: flex;
@@ -157,24 +169,30 @@ a:hover {
 
 
 /*
- * Text Decorations
+ * Containers
  */
-.text-delimiter {
-	color: #888;
+.container {
+	padding: 4px;
+	margin-left: auto;
+	margin-right: auto;
+	display: flex;
+	justify-content: center;
+	gap: 10px;
 }
-.invalid-data {
-	color: #666;
+.stack {
+	display: flex;
+	flex-direction: column;
 }
-.label {
-	display: inline;
+.section-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5em;
 }
-
-
 
 /*
  * Horizontal Panes
  */
-.horizontal-panes {
+.horizontal-panes, .wide-horizontal-panes {
 	display: flex;
 	flex-direction: row;
 	gap: 1em;
@@ -183,6 +201,15 @@ a:hover {
 }
 .fill-pane {
 	flex-grow: 1;
+}
+@media screen and (max-width: 640px) {
+	.wide-horizontal-panes {
+		flex-direction: column;
+		align-items: center; /* 中央揃えにして、固定幅の要素が見やすくなるように調整 */
+	}
+	.wide-horizontal-panes .fill-pane {
+		width: 100%; /* 可変幅のペインは幅いっぱいに広げる */
+	}
 }
 
 /*
@@ -309,15 +336,6 @@ input[type="number"].form-control {
 }
 input.invalid-input {
 	box-shadow: 0 0 0 1px red;
-}
-
-.container {
-	padding: 4px;
-	margin-left: auto;
-	margin-right: auto;
-	display: flex;
-	justify-content: center;
-	gap: 10px;
 }
 
 /*
