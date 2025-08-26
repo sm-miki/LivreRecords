@@ -108,3 +108,23 @@ bash update_env_secret_key.sh
 ```
 
 ### 5. データベースの初期化（マイグレーション）
+
+```bash
+python manage.py migrate
+```
+
+### 6. 管理ユーザーの作成（任意）
+
+```bash
+python manage.py createsuperuser
+```
+
+### 7. 開発サーバーの起動
+
+```bash
+python manage.py runserver
+```
+
+### 8. アクセス
+
+ブラウザで `http://localhost:8000/` にアクセスしてください。
