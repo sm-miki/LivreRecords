@@ -2,5 +2,5 @@ django >= 0.5.0
 django-environ >= 0.12.0
 django-widget-tweaks
 Pillow
-easyocr
 opencv-python
+easyocr
