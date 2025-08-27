@@ -54,17 +54,6 @@
 					{{ price_str | default:"(金額未設定)" }}
 				</div>
 			</div>
-			<div class="inline-flow card-control">
-				<button type="submit" class="btn-primary" onclick="location.href='{% url 'records:acquisition_edit' record.pk %}'">
-					編集
-				</button>
-				<form action="{% url 'records:acquisition_delete' record.pk %}" method="post" style="display: inline;">
-					{% csrf_token %}
-					<button type="submit" class="btn btn-danger" onclick="return confirm('本当にこの入手記録を削除しますか？ この操作は取り消せません。');">
-						削除
-					</button>
-				</form>
-			</div>
 		</div>
 	{% empty %}
 	<p>新着の入手記録はありません。</p>
