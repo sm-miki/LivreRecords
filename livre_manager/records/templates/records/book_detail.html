@@ -130,6 +130,18 @@
 					<p>この書籍の入手記録はありません。</p>
 				{% endif %}
 			</div>
+
+			{% if external_links %}
+				<div>
+					<h3>外部リンク</h3>
+					<div class="inline-flow">
+						{% for link in external_links %}
+							<a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>
+							{% if not forloop.last %} / {% endif %}
+						{% endfor %}
+					</div>
+				</div>
+			{% endif %}
 		</div>
 	</div>
 </div>

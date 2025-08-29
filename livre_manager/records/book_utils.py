@@ -1,3 +1,5 @@
+from typing import Dict
+
 def isbn10_to_isbn13(isbn10: str) -> str:
 	"""
 	ISBN10をISBN13に変換する。
@@ -35,3 +37,35 @@ def isbn13_to_isbn10(isbn13: str) -> str:
 	check_digit = 'X' if check_digit_value == 10 else str(check_digit_value)
 	
 	return core + check_digit
+
+def get_external_links(isbn) -> Dict[str, Dict]:
+	if isbn is None or len(isbn) not in (10, 13):
+		return { }
+	
+	links = { }
+	
+	try:
+		if len(isbn) == 10:
+			isbn13 = isbn10_to_isbn13(isbn)
+			isbn10 = isbn
+		else:
+			isbn13 = isbn
+			isbn10 = isbn13_to_isbn10(isbn)
+	except ValueError:
+		return { }
+	
+	# ジュンク堂
+	if isbn13:
+		links['junkudo'] = {
+			'label': 'ジュンク堂', 'url': f"https://www.maruzenjunkudo.co.jp/products/{isbn13}"
+		}
+		links['kinokuniya'] = {
+			'label': '紀伊國屋', 'url': f"https://www.kinokuniya.co.jp/f/dsg-01-{isbn13}"
+		}
+	
+	if isbn10:
+		links['amazon'] = {
+			'label': 'Amazon', 'url': f"https://www.amazon.co.jp/dp/{isbn10}"
+		}
+	
+	return links

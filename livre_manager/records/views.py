@@ -18,6 +18,7 @@ from django.utils import timezone  # タイムゾーン対応のためにtimezon
 from .currency import CURRENCY_INFO
 from .receipt_reader import ReceiptReader
 from .receipt_reader.ocr_engine import EasyOCREngine
+from . import book_utils
 
 from .models import Acquisition, Book, AcquiredItem
 from .acquisition_form import AcquisitionForm, AcquiredItemForm, AcquisitionItemFormSet
@@ -264,11 +265,18 @@ def book_detail(request, pk: str, id_type=None):
 			pk__in=acquisition_ids
 		).order_by('-acquisition_date')
 	
+	# 外部リンク
+	if record.isbn:
+		external_links = list(book_utils.get_external_links(record.isbn).values())
+	else:
+		external_links = []
+	
 	context = {
 		'record': record,
 		'authors': authors,
 		'book_id': pk,
 		'related_acquisitions': related_acquisitions,
+		'external_links': external_links,
 	}
 	return render(request, 'records/book_detail.html', context=context)
 

@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.dispatch import receiver
 import dateutil.parser
 
+from . import book_utils
 from .unique_id_field import NanoIDField
 from .currency import CURRENCY_CODE_CHOICES, JPY
 from .fuzzy_datetime import FuzzyDatetime
@@ -331,19 +332,27 @@ class Book(models.Model):
 	)
 	
 	@property
-	def detail_page_readable_url(self):
+	def isbn10(self):
 		"""
-		書籍の詳細ページへのURLを人間が読みやすい形式で返す。
-		優先順位はISBN、ASIN、JAN、id。
+		ISBN-13をISBN-10に変換して返す。
+		ISBNがISBN-10に変換できない形式の場合はNoneを返す。
 		"""
-		if self.isbn:
-			return reverse('records:book_detail_by_isbn', kwargs={ 'pk': self.isbn })
-		elif self.asin:
-			return reverse('records:book_detail_by_asin', kwargs={ 'pk': self.asin })
-		elif self.jan:
-			return reverse('records:book_detail_by_jan', kwargs={ 'pk': self.jan })
-		else:
-			return reverse('records:book_detail', kwargs={ 'pk': self.id })
+		if not self.isbn:
+			return None
+		
+		if len(self.isbn) == 10:
+			return self.isbn
+		
+		if len(self.isbn) == 13:
+			try:
+				return book_utils.isbn13_to_isbn10(self.isbn)
+			except ValueError:
+				return None
+		return None
+	
+	@property
+	def permalink(self):
+		return reverse('records:book_detail', kwargs={ 'pk': self.id })
 	
 	def __str__(self):
 		return f"{self.isbn} {self.title}"
@@ -356,6 +365,9 @@ class Book(models.Model):
 	def clean(self):
 		if self.has_item is None:
 			self.has_item = False
+		
+		if self.isbn:
+			self.isbn = self.isbn.replace('-', '')
 		
 		# 入手日時文字列の検証と正規化
 		if self.publication_date_str:
