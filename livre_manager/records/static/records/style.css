@@ -69,6 +69,7 @@ a:hover {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
+	justify-content: middle;
 	gap: 0.0em 0.4em;
 	flex-wrap: wrap;
 }
@@ -186,7 +187,7 @@ a:hover {
 .section-stack {
 	display: flex;
 	flex-direction: column;
-	gap: 1.5em;
+	gap: 1.1em;
 }
 
 /*
