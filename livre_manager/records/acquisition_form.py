@@ -12,7 +12,7 @@ class AcquisitionForm(forms.ModelForm):
 	class Meta:
 		FieldMap = {
 			'acquisition_type': { 'label': '入手方法', 'widget': forms.RadioSelect(attrs={ 'class': 'inline-radio' }) },
-			'acquisition_date_str': { 'label': '入手日時', 'widget': forms.TextInput(attrs={ 'placeholder': 'YYYY/mm/dd HH:MM:SS (時間部分は省略可能)' }) },
+			'acquisition_date_str': { 'label': '入手日時', 'widget': forms.TextInput(attrs={ 'placeholder': '例: 2020/4/10 15:20:33' }) },
 			'acquisition_date_tz': { 'label': 'タイムゾーン' },
 			'store_name': { 'label': '店舗名', 'widget': forms.TextInput() },
 			'transaction_number': { 'label': '取引番号', 'widget': forms.TextInput() },

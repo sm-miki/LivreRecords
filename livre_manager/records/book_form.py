@@ -18,7 +18,7 @@ class BookForm(forms.ModelForm):
 			'jan': { 'label': 'JAN', 'widget': forms.TextInput() },
 			'asin': { 'label': 'ASIN', 'widget': forms.TextInput() },
 			'publisher': { 'label': '出版社', 'widget': forms.TextInput() },
-			'publication_date_str': { 'label': '出版日', 'widget': forms.TextInput() },
+			'publication_date_str': { 'label': '出版日', 'widget': forms.TextInput(attrs={ 'placeholder': '例: 2020/4/10' }) },
 			'price': { 'label': '定価' },
 			'currency_code': { 'label': '通貨' },
 			'cover_image': { 'label': 'カバー画像' },
