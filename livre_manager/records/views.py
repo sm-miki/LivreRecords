@@ -10,6 +10,8 @@ from django.http import JsonResponse
 from django.views.generic import TemplateView
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Q, F
+from django.db.models import Count, Case, When, Value, IntegerField, DecimalField
+from django.db.models.functions import Coalesce
 from datetime import datetime, date, timedelta  # datetime, date, timedelta をインポート
 from django.utils import timezone  # タイムゾーン対応のためにtimezoneをインポート
 
@@ -25,16 +27,17 @@ def index(request):
 	"""
 	トップページ
 	"""
+	today = timezone.localdate()
 	recent_acquisitions = Acquisition.objects.order_by('-updated_at')[:5]
 	# 近日発売の書籍一覧
 	upcoming_books = Book.objects.filter(
-		publication_date__gte=date.today(),
-		publication_date__lte=date.today() + timedelta(days=14)
+		publication_date__gte=today,
+		publication_date__lte=today + timedelta(days=14)
 	).order_by('publication_date')
 	# 近日発売の書籍一覧
 	recent_books = Book.objects.filter(
-		publication_date__gte=date.today() - timedelta(days=14),
-		publication_date__lte=date.today()
+		publication_date__gte=today - timedelta(days=14),
+		publication_date__lte=today
 	).order_by('publication_date')
 	
 	return render(request, 'records/index.html', {
@@ -72,12 +75,15 @@ def acquisition_detail(request, pk):
 	record = get_object_or_404(Acquisition, pk=pk)
 	
 	items = record.items.all()
-	# 各 item に対応する Book レコードを探して添付
+	# 書籍アイテムに対応するBookレコードを一括で取得して紐付ける (N+1問題対策)
+	book_isbns = [item.item_id for item in items if item.item_type == 'book' and item.item_id]
+	books_by_isbn = { }
+	if book_isbns:
+		books = Book.objects.filter(isbn__in=book_isbns)
+		books_by_isbn = { book.isbn: book for book in books }
+	
 	for item in items:
-		if item.item_type == 'book' and item.item_id:
-			item.book_record = Book.objects.filter(isbn=item.item_id).first()
-		else:
-			item.book_record = None
+		item.book_record = books_by_isbn.get(item.item_id) if item.item_type == 'book' else None
 	
 	context = {
 		'record': record,
@@ -147,19 +153,13 @@ class AcquisitionEditView(TemplateView):
 		}
 		
 		if acquisition_form.is_valid() and item_formset.is_valid():
-			# データ検証成功
+			# データ検証成功 => データベースに書き込み
 			with transaction.atomic():  # データベース操作をアトミックに実行
 				new_acquisition = acquisition_form.save()
 				item_formset.instance = new_acquisition  # Formsetに親インスタンスを紐付け
 				item_formset.save()
 			
-			# TODO: この処理が必要かどうか見直し
-			# 成功時のフォームのクリア
-			context['acquisition_form'] = AcquisitionForm()
-			context['item_formset'] = AcquisitionItemFormSet()
-			context['PostSuccess'] = True
-			
-			# 成功時のリダイレクトも検討する。例えば、新しい詳細ページや一覧ページへ
+			messages.success(request, f'入手記録「{new_acquisition}」を保存しました。')
 			return redirect(reverse_lazy('records:acquisition_detail', args=[new_acquisition.pk]))
 		else:
 			# フォームが有効ではない場合、
@@ -357,13 +357,7 @@ class BookEditView(TemplateView):
 				author_formset.instance = new_book  # Formsetに親インスタンスを紐付け
 				author_formset.save()
 			
-			# TODO: この処理が必要かどうか見直し
-			# 成功時のフォームのクリア
-			context['book_form'] = BookForm()
-			context['author_formset'] = AuthorFormSet()
-			context['PostSuccess'] = True
-			
-			# 成功時のリダイレクトも検討する。例えば、新しい詳細ページや一覧ページへ
+			messages.success(request, f'書籍「{new_book}」を保存しました。')
 			return redirect(reverse_lazy('records:book_detail', args=[new_book.pk]))
 		else:
 			# フォームが有効ではない場合、
@@ -394,142 +388,94 @@ def stats(request):
 	"""
 	入手記録および書籍一覧の統計情報を表示するビュー。
 	"""
-	today = timezone.now()
+	today = timezone.localdate()
 	start_of_this_month = today.replace(day=1)
+	# Django 4.1+ and Python 3.9+ can use calendar.monthrange
+	import calendar
+	_, last_day_of_month = calendar.monthrange(today.year, today.month)
+	end_of_this_month = today.replace(day=last_day_of_month)
 	
-	if start_of_this_month.month == 12:
-		next_month_start = start_of_this_month.replace(year=start_of_this_month.year + 1, month=1, day=1)
-	else:
-		next_month_start = start_of_this_month.replace(month=start_of_this_month.month + 1, day=1)
-	end_of_this_month = next_month_start - timedelta(days=1)
-	
-	this_month = today.month
+	this_month_q = Q(acquisition_date__range=(start_of_this_month, end_of_this_month))
+	this_month_items_q = Q(acquisition__acquisition_date__range=(start_of_this_month, end_of_this_month))
 	
 	"""
 	入手記録に基づく集計
 	"""
-	
-	this_month_acquisitions = Acquisition.objects.filter(
-		acquisition_date__range=(start_of_this_month, end_of_this_month)
-	)
-	this_month_acquired_items = AcquiredItem.objects.filter(
-		acquisition__acquisition_date__range=(start_of_this_month, end_of_this_month)
+	acquisition_stats = Acquisition.objects.aggregate(
+		total_records=Count('id'),
+		this_month_records=Count('id', filter=this_month_q)
 	)
 	
-	# 購入記録数
-	total_acquisition_records = Acquisition.objects.count()
-	this_month_total_acquisition_records = this_month_acquisitions.count()
+	item_stats = AcquiredItem.objects.filter(item_type='book').aggregate(
+		total_purchase_count=Coalesce(Sum('quantity', filter=Q(acquisition__acquisition_type='purchase')), 0),
+		this_month_purchase_count=Coalesce(Sum('quantity', filter=Q(acquisition__acquisition_type='purchase') & this_month_items_q), 0),
+		total_other_count=Coalesce(Sum('quantity', filter=Q(acquisition__acquisition_type='other')), 0),
+		this_month_other_count=Coalesce(Sum('quantity', filter=Q(acquisition__acquisition_type='other') & this_month_items_q), 0),
+	)
 	
-	# 購入点数の集計
-	purchase_book_count = AcquiredItem.objects.filter(
-		acquisition__acquisition_type='purchase',
-		item_type='book'
-	).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-	this_month_purchase_book_count = this_month_acquired_items.filter(
-		acquisition__acquisition_type='purchase',
-		item_type='book'
-	).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-	
-	# その他入手点数の集計
-	other_acquisition_book_count = AcquiredItem.objects.filter(
-		acquisition__acquisition_type='other',
-		item_type='book'
-	).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-	this_month_other_acquisition_book_count = this_month_acquired_items.filter(
-		acquisition__acquisition_type='other',
-		item_type='book'
-	).aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-	
-	# 合計入手点数の集計
-	total_acquired_book_count = purchase_book_count + other_acquisition_book_count
-	this_month_total_acquired_book_count = this_month_purchase_book_count + this_month_other_acquisition_book_count
+	total_acquired_book_count = item_stats['total_purchase_count'] + item_stats['total_other_count']
+	this_month_total_acquired_book_count = item_stats['this_month_purchase_count'] + item_stats['this_month_other_count']
 	
 	"""
 	通貨別の集計
 	"""
-	currency_stats = { }
-	for code, info in CURRENCY_INFO.items():
-		# 全期間の購入金額
-		purchased_books = AcquiredItem.objects.filter(
-			acquisition__currency_code=code,  # 通貨でフィルタリング
-			item_type='book',
-			price__isnull=False,
-			quantity__isnull=False
-		)
-		this_month_purchased_books = this_month_acquired_items.filter(
-			acquisition__currency_code=code,  # 通貨でフィルタリング
-			item_type='book',
-			price__isnull=False,
-			quantity__isnull=False
-		)
-		
-		# 購入冊数（平均価格算出用）
-		total_book_count = purchased_books.aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-		if total_book_count > 0:
-			this_month_book_count = this_month_purchased_books.aggregate(total_quantity=Sum('quantity'))['total_quantity'] or 0
-			
-			# 購入金額
-			total_amount = purchased_books.aggregate(total_sum=Sum(F('price') * F('quantity')))['total_sum'] or 0
-			this_month_total_amount = this_month_purchased_books.aggregate(total_sum=Sum(F('price') * F('quantity')))['total_sum'] or 0
-			
-			# 平均価格
-			average_price = total_amount / total_book_count
-			this_month_average_price = this_month_total_amount / this_month_book_count if this_month_book_count > 0 else None
-			
-			currency_stats[code] = {
-				'label': info['label'],
-				'symbol': info['symbol'],
-				'total_book_count': total_book_count,
-				'total_amount': total_amount,
-				'average_price': average_price,
-				'this_month_book_count': this_month_book_count,
-				'this_month_total_amount': this_month_total_amount,
-				'this_month_average_price': this_month_average_price,
-			}
+	currency_stats_query = AcquiredItem.objects.filter(
+		item_type='book',
+		price__isnull=False,
+		quantity__isnull=False
+	).values('acquisition__currency_code').annotate(
+		total_book_count=Sum('quantity'),
+		total_amount=Sum(F('price') * F('quantity')),
+		this_month_book_count=Coalesce(Sum('quantity', filter=this_month_items_q), 0),
+		this_month_total_amount=Coalesce(Sum(F('price') * F('quantity'), filter=this_month_items_q), 0, output_field=DecimalField())
+	).order_by('acquisition__currency_code')
 	
-	# # 購入金額の合計
-	# purchase_total_amount = AcquiredItem.objects.filter(
-	# 	item_type='book',
-	# 	price__isnull=False,  # priceがnullでないことを確認
-	# 	quantity__isnull=False  # quantityがnullでないことを確認
-	# ).aggregate(
-	# 	total_sum=Sum(F('price') * F('quantity'))  # priceとquantityの積を合計
-	# )['total_sum'] or 0
-	# this_month_purchase_total_amount = this_month_acquired_items.filter(
-	# 	item_type='book',
-	# 	price__isnull=False,  # priceがnullでないことを確認
-	# 	quantity__isnull=False  # quantityがnullでないことを確認
-	# ).aggregate(
-	# 	total_sum=Sum(F('price') * F('quantity'))  # priceとquantityの積を合計
-	# )['total_sum'] or 0
-	#
-	# # 価格平均
-	# average_price = purchase_total_amount / purchase_book_count if purchase_book_count > 0 else 0
-	# this_month_average_price = this_month_purchase_total_amount / this_month_purchase_book_count if this_month_purchase_book_count > 0 else 0
+	currency_stats = { }
+	for stat in currency_stats_query:
+		code = stat['acquisition__currency_code']
+		if not code:
+			continue
+		info = CURRENCY_INFO.get(code)
+		if not info:
+			continue
+		
+		total_book_count = stat['total_book_count']
+		this_month_book_count = stat['this_month_book_count']
+		total_amount = stat['total_amount']
+		this_month_total_amount = stat['this_month_total_amount']
+		
+		currency_stats[code] = {
+			'label': info['label'],
+			'symbol': info['symbol'],
+			'total_book_count': total_book_count,
+			'total_amount': total_amount,
+			'average_price': total_amount / total_book_count if total_book_count > 0 else 0,
+			'this_month_book_count': this_month_book_count,
+			'this_month_total_amount': this_month_total_amount,
+			'this_month_average_price': this_month_total_amount / this_month_book_count if this_month_book_count > 0 else None,
+		}
 	
 	"""
 	書籍一覧の集計
 	"""
-	
-	# 書籍の登録冊数 (Bookモデルの全レコード数)
-	total_registered_books = Book.objects.count()
-	
-	# 所有済み冊数 (Bookモデルのhas_itemがTrueのレコード数)
-	owned_books_count = Book.objects.filter(has_item=True).count()
+	book_stats = Book.objects.aggregate(
+		total_registered=Count('id'),
+		owned_count=Count('id', filter=Q(has_item=True))
+	)
 	
 	context = {
-		'this_month': this_month,
-		'total_acquisition_records': total_acquisition_records,
-		'this_month_total_acquisition_records': this_month_total_acquisition_records,
-		'purchase_book_count': purchase_book_count,
-		'this_month_purchase_book_count': this_month_purchase_book_count,
-		'other_acquisition_book_count': other_acquisition_book_count,
-		'this_month_other_acquisition_book_count': this_month_other_acquisition_book_count,
+		'this_month': today.month,
+		'total_acquisition_records': acquisition_stats['total_records'],
+		'this_month_total_acquisition_records': acquisition_stats['this_month_records'],
+		'purchase_book_count': item_stats['total_purchase_count'],
+		'this_month_purchase_book_count': item_stats['this_month_purchase_count'],
+		'other_acquisition_book_count': item_stats['total_other_count'],
+		'this_month_other_acquisition_book_count': item_stats['this_month_other_count'],
 		'total_acquired_book_count': total_acquired_book_count,
 		'this_month_total_acquired_book_count': this_month_total_acquired_book_count,
 		'currency_stats': currency_stats,
-		'total_registered_books': total_registered_books,
-		'owned_books_count': owned_books_count,
+		'total_registered_books': book_stats['total_registered'],
+		'owned_books_count': book_stats['owned_count'],
 	}
 	
 	return render(request, f'records/stats.html', context=context)
