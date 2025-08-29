@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				formData.append('receipt_image', resizedBlob, file.name);
 				const csrftoken = getCookie('csrftoken');
 
-				const response = await fetch('/records/acquisition/receipt_ocr/', {
+				const response = await fetch('/acquisition/receipt_ocr/', {
 					method: 'POST',
 					body: formData,
 					headers: { 'X-CSRFToken': csrftoken },
