@@ -54,6 +54,9 @@ def _init():
 	# Sort by standard offset (seconds), then by timezone name
 	entries.sort(key=lambda t: (t[1], t[0]))
 	
+	# UTCを追加
+	entries.insert(0, ("UTC", 0, 0))
+	
 	for name, std, dst in entries:
 		ALL_TIMEZONE_NAMES.append(name)
 		ALL_TIMEZONE_DATA[name] = {
