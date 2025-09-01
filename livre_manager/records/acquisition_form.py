@@ -55,7 +55,7 @@ AcquisitionItemFormSet = inlineformset_factory(
 	parent_model=Acquisition,
 	model=AcquiredItem,
 	form=AcquiredItemForm,
-	extra=10,  # 最初から表示される行数
+	extra=1,  # 最初から表示される行数
 	can_delete=True,  # 行の削除を許可するか
 	can_order=True,
 )

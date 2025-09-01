@@ -2,6 +2,9 @@
 
 import { normalizeDateTime, InvalidFormatError, InvalidValueError, PrecisionError, InvalidTimezoneError } from './fuzzy-datetime/index.js';
 
+// グローバルな名前空間を作成
+window.livre = window.livre || {};
+
 (() => {
 	function showWarning(field, message) {
 		// 入力欄に対するエラーメッセージを表示する。
@@ -21,6 +24,135 @@ import { normalizeDateTime, InvalidFormatError, InvalidValueError, PrecisionErro
 		}
 	}
 
+	// フォームセット関連の処理をまとめる
+	const formsetManager = {
+		init() {
+			this.itemsContainer = document.getElementById('items-container').getElementsByTagName('tbody')[0];
+			this.managementForm = document.getElementById('id_items-TOTAL_FORMS');
+			this.emptyFormTemplate = document.getElementById('empty-form-template');
+			this.addItemRowButton = document.getElementById('add-item-row-button');
+
+			if (this.addItemRowButton) {
+				this.addItemRowButton.addEventListener('click', () => this.addRow());
+			}
+
+			this.attachInitialDeleteRowListeners();
+
+			// グローバルに公開
+			window.livre.addRow = this.addRow.bind(this);
+			window.livre.fillOrAddIsbnRows = this.fillOrAddIsbnRows.bind(this);
+		},
+
+		addRow(data = {}) {
+			const totalForms = parseInt(this.managementForm.value);
+			const newFormIndex = totalForms;
+
+			// テンプレートの `__prefix__` を新しいインデックスに置換
+			const newRowHtml = this.emptyFormTemplate.innerHTML.replace(/__prefix__/g, newFormIndex);
+
+			const newRow = this.itemsContainer.insertRow();
+			newRow.innerHTML = newRowHtml;
+			newRow.className = 'acquired-item';
+
+			// データを新しい行に設定
+			if (data.isbn) {
+				newRow.querySelector(`input[name="items-${newFormIndex}-item_id"]`).value = data.isbn;
+			}
+			// quantityのデフォルト値を1に設定
+			const quantityInput = newRow.querySelector(`input[name="items-${newFormIndex}-quantity"]`);
+			if (quantityInput && !quantityInput.value) {
+				quantityInput.value = '1';
+			}
+			// orderを設定
+			const orderInput = newRow.querySelector(`input[name="items-${newFormIndex}-order"]`);
+			if (orderInput) {
+				orderInput.value = newFormIndex;
+			}
+
+			// 管理フォームのフォーム数を更新
+			this.managementForm.value = totalForms + 1;
+
+			// 新しく追加された削除ボタンにイベントリスナーを付与
+			const deleteButton = newRow.querySelector('.delete-row-button');
+			if (deleteButton) {
+				deleteButton.addEventListener('click', this.handleDeleteRow);
+			}
+
+			return newRow;
+		},
+
+		/**
+		 * 複数のISBNをフォームセットに設定する。
+		 * データが入力されている最後の行より後ろにある空行を優先的に使用し、
+		 * 足りない場合は新しい行を追加する。
+		 * @param {string[]} isbns - 追加するISBNの配列。
+		 */
+		fillOrAddIsbnRows(isbns) {
+			if (!isbns || isbns.length === 0) {
+				return;
+			}
+
+			const itemRows = Array.from(this.itemsContainer.querySelectorAll('.acquired-item'));
+			let lastDataRowIndex = -1;
+
+			// ISBNが入力されている最後の行のインデックスを見つける
+			itemRows.forEach((row, index) => {
+				if (row.style.display === 'none') {
+					return; // 削除済みの行はスキップ
+				}
+				const isbnInput = row.querySelector('input[name$="-item_id"]');
+				if (isbnInput && isbnInput.value.trim() !== '') {
+					lastDataRowIndex = index;
+				}
+			});
+
+			// 最後のデータ行の「後」にある、利用可能な空行を探す
+			const availableEmptyRows = [];
+			for (let i = lastDataRowIndex + 1; i < itemRows.length; i++) {
+				const row = itemRows[i];
+				if (row.style.display !== 'none') {
+					const isbnInput = row.querySelector('input[name$="-item_id"]');
+					// ISBN入力欄が空の行を対象とする
+					if (isbnInput && isbnInput.value.trim() === '') {
+						availableEmptyRows.push(row);
+					}
+				}
+			}
+
+			let isbnIndex = 0;
+			// 見つかった空行にISBNを順番に埋めていく
+			for (const row of availableEmptyRows) {
+				if (isbnIndex >= isbns.length) break;
+				const isbnInput = row.querySelector('input[name$="-item_id"]');
+				if (isbnInput) {
+					isbnInput.value = isbns[isbnIndex++];
+				}
+			}
+
+			// それでもISBNが残っている場合は、新しい行を追加する
+			for (let i = isbnIndex; i < isbns.length; i++) {
+				this.addRow({ isbn: isbns[i] });
+			}
+		},
+
+		handleDeleteRow(event) {
+			const row = event.target.closest('.acquired-item');
+			if (row) {
+				const deleteInput = row.querySelector('input[name$="-DELETE"]');
+				if (deleteInput) {
+					deleteInput.checked = true;
+				}
+				row.style.display = 'none';
+			}
+		},
+
+		attachInitialDeleteRowListeners() {
+			this.itemsContainer.querySelectorAll('.delete-row-button').forEach(button => {
+				button.addEventListener('click', this.handleDeleteRow);
+			});
+		}
+	};
+
 	window.addEventListener('DOMContentLoaded', function () {
 		// 入手日時の入力欄とエラー表示用要素、Submit ボタンを取得
 		const form = document.querySelector('form');
@@ -29,6 +161,9 @@ import { normalizeDateTime, InvalidFormatError, InvalidValueError, PrecisionErro
 		const subtotalInput = document.getElementById('id_subtotal');
 		const taxInput = document.getElementById('id_tax');
 		const extraFeeInput = document.getElementById('id_extra_fee');
+
+		// フォームセット管理を初期化
+		formsetManager.init();
 
 		/* ダーティフラグの管理と離脱時の警告表示 */
 

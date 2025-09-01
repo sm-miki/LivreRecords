@@ -59,36 +59,52 @@
 		{{ item_formset.management_form }}
 
 		<table id="items-container" class="detail-table">
-			<!-- ヘッダの追加 -->
-			{% for colname in item_columns %}
-			<th>{{ colname }}</th>
-			{% endfor %}
+			<thead>
+				<tr>
+					<!-- ヘッダの追加 -->
+					{% for colname in item_columns %}
+					<th>{{ colname }}</th>
+					{% endfor %}
+					<th>操作</th>
+				</tr>
+			</thead>
+			<tbody>
+				<!-- 行の追加 -->
+				{% for form in item_formset %}
+				<tr class="acquired-item">
+					{% for hidden in form.hidden_fields %}
+						{{ hidden }}
+					{% endfor %}
 
-			<!-- 行の追加 -->
-			{% for form in item_formset %}
-			<tr class="acquired-item">
-				{% for hidden in form.hidden_fields %}
-					{{ hidden }}
-				{% endfor %}
+					{% for field in form.visible_fields %}
+						<td>
+							{{ field | add_class:"form-control"}}
+						</td>
+					{% endfor %}
 
-				{% for field in form.visible_fields %}
 					<td>
-						{{ field | add_class:"form-control"}}
+						<button type="button" class="delete-row-button">削除</button>
 					</td>
+				</tr>
 				{% endfor %}
-
-				<td>
-					<button type="button" class="delete-row-button">削除</button>
-				</td>
-			</tr>
-			{% endfor %}
+			</tbody>
 		</table>
+		<button type="button" id="add-item-row-button" class="btn btn-secondary mt-2">項目を追加</button>
 	</div>
 
 	<div class="container">
 		<button id="submit-button" name="btn_submit" type="submit">登録</button>
 		<button id="cancel-button" type="button" onclick="window.location.href='{{ cancel_url }}'">キャンセル</button>
 	</div>
+
+	<table style="display: none;">
+		<tr id="empty-form-template" class="acquired-item">
+			{% for field in item_formset.empty_form %}
+				<td>{{ field|add_class:"form-control" }}</td>
+			{% endfor %}
+			<td><button type="button" class="delete-row-button">削除</button></td>
+		</tr>
+	</table>
 </form>
 {% endblock %}
 
