@@ -148,7 +148,7 @@
 			</div>
 
 			<div class="text-item">
-				{% format_price_and_tax record.total record.subtotal record.tax record.currency_code as price_str %}
+				{% format_price_and_tax item.price item.net_price item.tax record.currency_code as price_str %}
 				{{ price_str | default:"(金額未設定)" }}
 			</div>
 		</div>
