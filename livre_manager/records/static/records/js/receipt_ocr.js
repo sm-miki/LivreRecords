@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 			ocrStatusDiv.style.display = 'block';
 			loadingIndicator.style.display = 'inline';
-			ocrResultMessage.textContent = '画像を処理中...';
+			ocrResultMessage.textContent = '画像を処理中... (数分かかる場合があります)';
 			detectedIsbnsList.innerHTML = ''; // 前回の結果をクリア
 
 			try {
