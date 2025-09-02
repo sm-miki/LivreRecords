@@ -1,8 +1,10 @@
 # LivreRecords
 
+<img src="./docs/screenshots/index.jpg" width="400px" alt="トップページ">
+
 ## 概要
 
-LivreRecordsは、個人の書籍入手・購入を管理するために設計されたDjangoベースのWebアプリケーションです。
+LivreRecordsは、個人による書籍の入手や購入記録を管理するために設計された、DjangoベースのWebアプリケーションです。
 
 レシート単位で書籍の購入・入手記録を管理できます。また、購入情報の入力を補助する機能として、OCRを用いた簡単なレシート読み取り機能も備えています。
 
@@ -52,7 +54,7 @@ LivreRecordsは、個人の書籍入手・購入を管理するために設計�
 
 ![ER図](./docs/images/ER図-ja.drawio.png)
 
-## インストールと実行
+## 導入
 
 ### 0. 前提条件 (Prerequisites)
 
@@ -107,24 +109,37 @@ update_env_secret_key.sh
 bash update_env_secret_key.sh
 ```
 
-### 5. データベースの初期化（マイグレーション）
+## 開発用サーバの起動
+
+### 1. データベースの初期化
+
+データベースの初期化のためのマイグレーションを実行します。
 
 ```bash
 python manage.py migrate
 ```
 
-### 6. 管理ユーザーの作成（任意）
+### 2. 管理ユーザーの作成（任意）
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### 7. 開発サーバーの起動
+### 3. 開発サーバーの起動
 
 ```bash
 python manage.py runserver
 ```
 
-### 8. アクセス
+### 4. アクセス
 
-ブラウザで `http://localhost:8000/` にアクセスしてください。
+ブラウザで `http://localhost:8000/` （またはコンソール上に表示されたアドレス）にアクセスし、ウェブページが表示されることを確認します。
+
+## スクリーンショット
+
+### 入手記録の編集とOCRの読み取り
+<img src="./docs/screenshots/acquisition_edit.jpg" width="400px" alt="入手記録の入力とOCRの読み取り">
+
+### 入手記録の閲覧
+
+<img src="./docs/screenshots/acquisition_detail.jpg" width="400px" alt="入手記録詳細">
