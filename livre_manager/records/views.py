@@ -157,9 +157,9 @@ class AcquisitionEditView(TemplateView):
 			# データ検証成功 => データベースに書き込み
 			with transaction.atomic():  # データベース操作をアトミックに実行
 				new_acquisition = acquisition_form.save()
-				item_formset.instance = new_acquisition  # Formsetに親インスタンスを紐付け
+				item_formset.instance = new_acquisition
 				item_formset.save()
-			
+
 			messages.success(request, f'入手記録「{new_acquisition}」を保存しました。')
 			return redirect(reverse_lazy('records:acquisition_detail', args=[new_acquisition.pk]))
 		else:

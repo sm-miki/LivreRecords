@@ -285,7 +285,7 @@ class AcquiredItem(models.Model):
 		return f"{self.item_type}: {self.item_id} - {self.description} ({self.acquisition})"
 	
 	class Meta:
-		order_with_respect_to = 'acquisition'
+		ordering = ['order']
 		verbose_name = '入手項目'
 		verbose_name_plural = '入手項目'
 	
@@ -390,7 +390,7 @@ class BookAuthorRelation(models.Model):
 	)
 	
 	# 対応するBook内での記載順
-	# order = models.PositiveIntegerField(default=0, null=False, blank=True)
+	order = models.PositiveIntegerField(default=0, null=False, blank=True)
 	# 著者名
 	author_name = models.TextField()
 	# 役割
@@ -405,7 +405,6 @@ class BookAuthorRelation(models.Model):
 		return f"{self.author_name} {self.role} ({self.book_record.isbn} - {self.book_record.title})"
 	
 	class Meta:
-		order_with_respect_to = 'book_record'
-		# ordering = ['order']
+		ordering = ['order']
 		verbose_name = '著者'
 		verbose_name_plural = '著者'

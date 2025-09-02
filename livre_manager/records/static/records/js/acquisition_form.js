@@ -32,11 +32,23 @@ window.livre = window.livre || {};
 			this.emptyFormTemplate = document.getElementById('empty-form-template');
 			this.addItemRowButton = document.getElementById('add-item-row-button');
 
+			// handleDeleteRow の this を束縛
+			this.handleDeleteRow = this.handleDeleteRow.bind(this);
+
 			if (this.addItemRowButton) {
 				this.addItemRowButton.addEventListener('click', () => this.addRow());
 			}
 
 			this.attachInitialDeleteRowListeners();
+			this.attachInitialMoveRowListeners();
+			this.updateOrderFields(); // 初期ロード時にも順序を更新
+			this.updateMoveButtonsState();
+
+			// 初期表示時に表示されている行が0個の場合、空の行を1つ追加する
+			const visibleRows = this.itemsContainer.querySelectorAll('.acquired-item:not([style*="display: none"])');
+			if (visibleRows.length === 0) {
+				this.addRow();
+			}
 
 			// グローバルに公開
 			window.livre.addRow = this.addRow.bind(this);
@@ -47,12 +59,19 @@ window.livre = window.livre || {};
 			const totalForms = parseInt(this.managementForm.value);
 			const newFormIndex = totalForms;
 
-			// テンプレートの `__prefix__` を新しいインデックスに置換
-			const newRowHtml = this.emptyFormTemplate.innerHTML.replace(/__prefix__/g, newFormIndex);
+			// <template> タグからコンテンツを複製
+			const newRowFragment = this.emptyFormTemplate.content.cloneNode(true);
+			const newRow = newRowFragment.querySelector('tr'); // <tr>要素を取得
 
-			const newRow = this.itemsContainer.insertRow();
-			newRow.innerHTML = newRowHtml;
-			newRow.className = 'acquired-item';
+			// 複製した行の input, select, textarea 要素の属性を更新
+			newRow.querySelectorAll('input, select, textarea').forEach(input => {
+				if (input.name) {
+					input.name = input.name.replace(/__prefix__/g, newFormIndex);
+				}
+				if (input.id) {
+					input.id = input.id.replace(/__prefix__/g, newFormIndex);
+				}
+			});
 
 			// データを新しい行に設定
 			if (data.isbn) {
@@ -69,6 +88,9 @@ window.livre = window.livre || {};
 				orderInput.value = newFormIndex;
 			}
 
+			// itemsContainer (tbody) に新しい行を追加
+			this.itemsContainer.appendChild(newRow);
+
 			// 管理フォームのフォーム数を更新
 			this.managementForm.value = totalForms + 1;
 
@@ -77,6 +99,13 @@ window.livre = window.livre || {};
 			if (deleteButton) {
 				deleteButton.addEventListener('click', this.handleDeleteRow);
 			}
+
+			// 新しく追加された移動ボタンにイベントリスナーを付与
+			newRow.querySelector('.move-up-button')?.addEventListener('click', (e) => this.handleMoveRow(e, 'up'));
+			newRow.querySelector('.move-down-button')?.addEventListener('click', (e) => this.handleMoveRow(e, 'down'));
+
+			this.updateOrderFields();
+			this.updateMoveButtonsState();
 
 			return newRow;
 		},
@@ -135,20 +164,139 @@ window.livre = window.livre || {};
 			}
 		},
 
+		/**
+		 * 指定された行が空（ユーザーによる入力がない）かどうかを判定します。
+		 * @param {HTMLElement} row - 判定対象の <tr> 要素。
+		 * @returns {boolean} 行が空の場合は true, それ以外は false。
+		 */
+		isRowEmpty(row) {
+			// ユーザーが入力する可能性のある主要なフィールドをチェックする。
+			// これらのいずれかに値があれば、行は「空ではない」と見なす。
+			const fieldsToCheck = [
+				'item_id',
+				'genre_code',
+				'description',
+				'price',
+				'net_price',
+				'tax',
+				'user_memo'
+			];
+
+			for (const fieldName of fieldsToCheck) {
+				const input = row.querySelector(`input[name$="-${fieldName}"]`);
+				if (input && input.value.trim() !== '') {
+					return false; // データが入力されているフィールドを発見
+				}
+			}
+
+			return true; // すべての主要フィールドが空
+		},
+
 		handleDeleteRow(event) {
 			const row = event.target.closest('.acquired-item');
-			if (row) {
-				const deleteInput = row.querySelector('input[name$="-DELETE"]');
-				if (deleteInput) {
-					deleteInput.checked = true;
-				}
-				row.style.display = 'none';
+			if (!row) {
+				return;
 			}
+
+			// 行に何らかの値が入力されている場合は確認ダイアログを表示する。
+			if (!this.isRowEmpty(row)) {
+				// 行にデータがある場合は、確認ダイアログを表示
+				const descriptionInput = row.querySelector('input[name$="-description"]');
+				const itemIdInput = row.querySelector('input[name$="-item_id"]');
+				const description = descriptionInput ? descriptionInput.value.trim() : '';
+				const itemId = itemIdInput ? itemIdInput.value.trim() : '';
+				const itemInfo = description ? `「${description}」` : (itemId ? `「ID: ${itemId}」` : '');
+				const confirmMessage = itemInfo ? `項目${itemInfo}を削除しますか？` : 'この項目を削除しますか？';
+
+				if (!window.confirm(confirmMessage)) {
+					// 削除キャンセル
+					return;
+				}
+			}
+
+			// 削除の実行
+			const deleteInput = row.querySelector('input[name$="-DELETE"]');
+			if (deleteInput) {
+				deleteInput.value = 'true';
+			}
+			row.style.display = 'none';
+			this.updateOrderFields();
+			this.updateMoveButtonsState();
+
+			// 表示されている行がなくなったら、新しい空の行を追加する
+			const visibleRows = this.itemsContainer.querySelectorAll('.acquired-item:not([style*="display: none"])');
+			if (visibleRows.length === 0) {
+				this.addRow();
+			}
+		},
+
+		/**
+		 * 行を上下に移動させるイベントハンドラ
+		 * @param {Event} event - クリックイベント
+		 * @param {string} direction - 'up' または 'down'
+		 */
+		handleMoveRow(event, direction) {
+			const row = event.target.closest('.acquired-item');
+			if (!row) {
+				return;
+			}
+
+			if (direction === 'up') {
+				let prevSibling = row.previousElementSibling;
+				while (prevSibling && prevSibling.style.display === 'none') {
+					prevSibling = prevSibling.previousElementSibling;
+				}
+				if (prevSibling) {
+					this.itemsContainer.insertBefore(row, prevSibling);
+				}
+			} else if (direction === 'down') {
+				let nextSibling = row.nextElementSibling;
+				while (nextSibling && nextSibling.style.display === 'none') {
+					nextSibling = nextSibling.nextElementSibling;
+				}
+				if (nextSibling) {
+					this.itemsContainer.insertBefore(row, nextSibling.nextElementSibling);
+				}
+			}
+
+			this.updateOrderFields();
+			this.updateMoveButtonsState();
+		},
+
+		// 表示されている行に基づいてORDERフィールドの値を更新する
+		updateOrderFields() {
+			const visibleRows = Array.from(this.itemsContainer.querySelectorAll('.acquired-item:not([style*="display: none"])'));
+			visibleRows.forEach((row, index) => {
+				const orderInput = row.querySelector('input[name$="-order"]');
+				if (orderInput) {
+					orderInput.value = index;
+				}
+			});
+		},
+
+		// 最初と最後の行の移動ボタンを無効化/有効化する
+		updateMoveButtonsState() {
+			const visibleRows = Array.from(this.itemsContainer.querySelectorAll('.acquired-item:not([style*="display: none"])'));
+			visibleRows.forEach((row, index) => {
+				const upButton = row.querySelector('.move-up-button');
+				const downButton = row.querySelector('.move-down-button');
+				if (upButton) upButton.disabled = (index === 0);
+				if (downButton) downButton.disabled = (index === visibleRows.length - 1);
+			});
 		},
 
 		attachInitialDeleteRowListeners() {
 			this.itemsContainer.querySelectorAll('.delete-row-button').forEach(button => {
 				button.addEventListener('click', this.handleDeleteRow);
+			});
+		},
+
+		attachInitialMoveRowListeners() {
+			this.itemsContainer.querySelectorAll('.move-up-button').forEach(button => {
+				button.addEventListener('click', (e) => this.handleMoveRow(e, 'up'));
+			});
+			this.itemsContainer.querySelectorAll('.move-down-button').forEach(button => {
+				button.addEventListener('click', (e) => this.handleMoveRow(e, 'down'));
 			});
 		}
 	};

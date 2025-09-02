@@ -82,14 +82,16 @@
 						</td>
 					{% endfor %}
 
-					<td>
-						<button type="button" class="delete-row-button">削除</button>
+					<td class="action-cell">
+						<button type="button" class="move-row-button move-up-button" title="上へ移動"></button>
+						<button type="button" class="move-row-button move-down-button" title="下へ移動"></button>
+						<button type="button" class="delete-row-button" title="項目を削除">削除</button>
 					</td>
 				</tr>
 				{% endfor %}
 			</tbody>
 		</table>
-		<button type="button" id="add-item-row-button" class="btn btn-secondary mt-2">項目を追加</button>
+		<button type="button" id="add-item-row-button" class="btn btn-secondary">項目を追加</button>
 	</div>
 
 	<div class="container">
@@ -97,14 +99,23 @@
 		<button id="cancel-button" type="button" onclick="window.location.href='{{ cancel_url }}'">キャンセル</button>
 	</div>
 
-	<table style="display: none;">
-		<tr id="empty-form-template" class="acquired-item">
-			{% for field in item_formset.empty_form %}
+	<template id="empty-form-template">
+		<tr class="acquired-item">
+			{% for field in item_formset.empty_form.hidden_fields %}
+				{{ field }}
+			{% endfor %}
+
+			{% for field in item_formset.empty_form.visible_fields %}
 				<td>{{ field|add_class:"form-control" }}</td>
 			{% endfor %}
-			<td><button type="button" class="delete-row-button">削除</button></td>
+
+			<td class="action-cell">
+				<button type="button" class="move-row-button move-up-button" title="上へ移動"></button>
+				<button type="button" class="move-row-button move-down-button" title="下へ移動"></button>
+				<button type="button" class="delete-row-button" title="項目を削除">削除</button>
+			</td>
 		</tr>
-	</table>
+	</template>
 </form>
 {% endblock %}
 
