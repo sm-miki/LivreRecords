@@ -143,3 +143,7 @@ python manage.py runserver
 ### 入手記録の閲覧
 
 <img src="./docs/screenshots/acquisition_detail.jpg" width="400px" alt="入手記録詳細">
+
+### 統計表示
+
+<img src="./docs/screenshots/stats.jpg" width="400px" alt="統計表示">
