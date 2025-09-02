@@ -39,7 +39,7 @@ LivreRecordsは、個人による書籍の入手や購入記録を管理する�
 
 - **バックエンド**: Python3, Django
 - **データベース**: SQLite
-- **画像処理**: Pillow, OpenCV-Python
+- **画像処理**: NumPy **(バージョン1.x系)**, Pillow, OpenCV-Python
 - **OCR**: EasyOCR
 - **フロントエンド**: HTML, CSS, JavaScript
 - **その他ライブラリ**: django-widget-tweaks
@@ -91,15 +91,17 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 依存パッケージのインストール
+### 3. 依存パッケージのインストール
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. シークレットキーの初期化
+### 4. シークレットキーの初期化
 
 .envファイルにDjangoのSECRET_KEYを設定します。
+`update_env_secret_key.sh` は新しいランダムなSECRET_KEYを生成し、.envファイルに書き込みます。
+
 #### Windowsの場合
 
 ```bash
@@ -121,6 +123,7 @@ bash update_env_secret_key.sh
 データベースの初期化のためのマイグレーションを実行します。
 
 ```bash
+python manage.py makemigrations
 python manage.py migrate
 ```
 
@@ -152,3 +155,8 @@ python manage.py runserver
 ### 統計表示
 
 <img src="./docs/screenshots/stats.jpg" width="400px" alt="統計表示">
+
+## ライセンス
+
+
+[MIT © 2025 sm-miki](./LICENSE)
