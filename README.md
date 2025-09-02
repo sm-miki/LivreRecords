@@ -66,8 +66,11 @@ LivreRecordsは、個人による書籍の入手や購入記録を管理する�
 
 ### 1. リポジトリのクローン (Clone Repository)
 
+プロジェクトをクローンしたい場所でターミナルを開き、以下のコマンドを実行します。
+
  ```bash
  git clone https://github.com/sm-miki/LivreRecords.git
+ cd LivreRecords
  ```
 
 ### 2. 仮想環境の作成と有効化
@@ -100,12 +103,14 @@ pip install -r requirements.txt
 #### Windowsの場合
 
 ```bash
+cd livre_manager
 update_env_secret_key.sh
 ```
 
 #### macOS/Linuxの場合
 
 ```bash
+cd livre_manager
 bash update_env_secret_key.sh
 ```
 
