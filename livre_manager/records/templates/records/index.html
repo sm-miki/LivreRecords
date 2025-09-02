@@ -60,7 +60,7 @@
 	{% endfor %}
 </div>
 
-<h3>新刊（{{ recent_books | length }}件）</h3>
+<h3 title="過去14日以内に発売された書籍">新刊（{{ recent_books | length }}件）</h3>
 
 <div class="item-container boxed">
 	{% for record in recent_books %}
@@ -116,7 +116,7 @@
 	{% endfor %}
 </div>
 
-<h3>近日発売（{{ upcoming_books | length }}件）</h3>
+<h3 title="今後14日以内に発売予定の書籍">近日発売（{{ upcoming_books | length }}件）</h3>
 
 <div class="item-container boxed">
 	{% for record in upcoming_books %}

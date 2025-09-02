@@ -47,7 +47,7 @@
 					<div class="text-item">
 						{% if record.authors.all %}
 							{% for author in record.authors.all %}{% comment %}
-							{% endcomment %}{{ author.author_name }}{% if author.role %}（{{ author.role }}）{% endif %}{% if not forloop.last %}、{% endif %}{% comment %}
+								{% endcomment %}{{ author.author_name }}{% if author.role %}（{{ author.role }}）{% endif %}{% if not forloop.last %}、{% endif %}{% comment %}
 							{% endcomment %}{% endfor %}
 						{% else %}
 							-
@@ -56,7 +56,7 @@
 				</div>
 				<div class="inline-flow">
 					<div class="text-item">
-						{{ record.publisher | default:"(出版社未登録)" }}（{{ record.publication_date_str | default:"(発売日未登録)" }}）
+						{{ record.publisher | default:"(出版社未登録)" }} ({{ record.publication_date_str | default:"発売日未登録" }})
 					</div>
 				</div>
 				<div class="inline-flow">

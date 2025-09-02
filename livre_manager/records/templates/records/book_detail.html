@@ -49,26 +49,33 @@
 				{# 著者リスト #}
 				<div class="inline-flow">
 					<div class="text-item">
+						{% spaceless %}
 						{% if record.authors.all %}
-							{% for author in record.authors.all %}
-								{{ author.author_name }}{% if author.role %}（{{ author.role }}）{% endif %}{% if not forloop.last %}、{% endif %}
-							{% endfor %}
+							{% for author in record.authors.all %}{% comment %}
+								{% endcomment %}{{ author.author_name }}{% if author.role %}（{{ author.role }}）{% endif %}{% if not forloop.last %}、{% endif %}{% comment %}
+							{% endcomment %}{% endfor %}
 						{% else %}
 							-
 						{% endif %}
 						{% endspaceless %}
 					</div>
 				</div>
-
+			</div>
+			<div class="stack">
 				<div class="inline-flow">
 					<div class="text-item">
-						{{ record.publisher | default:"(出版社未登録)" }}（{{ record.publication_date_str | default:"(発売日未登録)" }}）
+						<span class="label">出版社: </span>{{ record.publisher | default:"-" }}
+					</div>
+				</div>
+				<div class="inline-flow">
+					<div class="text-item">
+						<span class="label">発売日: </span>{{ record.publication_date_str | default:"-" }}
 					</div>
 				</div>
 
 				<div class="inline-flow">
 					<div class="text-item">
-						<span class="label">定価: </span>{{ record.price | format_currency:record.currency_code | default:"価格未登録" }}
+						<span class="label">定価: </span>{{ record.price | format_currency:record.currency_code | default:"-" }}
 					</div>
 				</div>
 
